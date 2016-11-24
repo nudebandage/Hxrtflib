@@ -1,6 +1,5 @@
 import hxrtflib.Hxrtflib;
 
-
 typedef Cell = {
   var text : String;
   var selected : Bool;
@@ -192,6 +191,7 @@ class TestInsertWhenSelected extends HxrtflibTester {
   }
 }
 
+
 class TestInsertChar extends HxrtflibTester {
   // public function test_ignored_chars() {
   // }
@@ -211,12 +211,52 @@ class TestInsertChar extends HxrtflibTester {
 }
 
 
+class TestWordExtremity extends HxrtflibTester {
+  public function test_start_col() {
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+    var result = core.is_word_extremity(row, col);
+    assertEquals(true, result);
+  }
+
+  public function test_eol() {
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+    editor.set_cell(row, col, "a");
+    editor.set_cell(row, col+1, "b");
+    editor.set_cell(row, col+2, "\n");
+    var result = core.is_word_extremity(row, col + 1);
+    assertEquals(true, result);
+  }
+
+  public function test_start_middle_and_end() {
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+    editor.set_cell(row, col, " ");
+    editor.set_cell(row, col+1, "a");
+    editor.set_cell(row, col+2, "b");
+    editor.set_cell(row, col+3, "c");
+    editor.set_cell(row, col+4, " ");
+    var result = core.is_word_extremity(row, col + 1);
+    assertEquals(true, result);
+
+    var result = core.is_word_extremity(row, col + 2);
+    assertEquals(false, result);
+
+    var result = core.is_word_extremity(row, col + 3);
+    assertEquals(true, result);
+  }
+
+}
+
+
 class HxrtflibTest {
   static function main(){
     var r = new haxe.unit.TestRunner();
     r.add(new TestWhenCursorAtStart());
     r.add(new TestInsertWhenSelected());
     r.add(new TestInsertChar());
+    r.add(new TestWordExtremity());
     r.run();
   }
 }

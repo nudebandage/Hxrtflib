@@ -65,6 +65,7 @@ class Hxrtflib {
     }
   }
 
+
   public function insert_when_cursor_at_start(row) {
     var tag : Int;
     var char_at_right = _char_at_index(row, Globals.START_COL+1);
@@ -89,14 +90,66 @@ class Hxrtflib {
     tag_replace(tag, row, Globals.START_COL);
   }
 
+
   public function insert_when_selected(row:Int, col:Int) {
     var sel_pos:Pos = _first_selected_index(row, col);
     var tag = _tag_at_index(sel_pos.row, sel_pos.col);
     tag_replace(tag, sel_pos.row, sel_pos.col);
   }
 
+
   function tag_replace(tag:Int, row, col) {
     _tag_add(tag, row, col);
+  }
+
+
+  // public function style_toggle(name, args, kwargs) {
+    // var pos:Pos = _char_at_index(
+    // if (_is_selected()) {
+      // change_style_selected(name, args, kwargs);
+    // }
+    // else {
+      // change_style_not_selected(name, args, kwargs);
+    // }
+  // }
+
+
+  // public function change_style_selected(name, args, kwargs) {
+    // if (is_word_extremity) {
+    // }
+  // }
+
+  public function is_word_extremity(row, col) {
+    if (is_word_start(row, col)) {
+      return true;
+    }
+    else if (is_word_end(row, col)) {
+      return true;
+    }
+    return false;
+  }
+
+  function is_word_start(row, col) {
+    if (col == Globals.START_COL) {
+      return true;
+    }
+    // TODO indexs must become addable, +1/-1 for row and col
+    var char_prev = _char_at_index(row, col-1);
+    if (char_prev == ' ') {
+      return true;
+    }
+    return false;
+  }
+
+  function is_word_end(row, col) {
+    // TODO how to test for out of bounds... -1?
+    // Need to specify this behvaior also for _char_at_index
+    // TODO indexs must become addable, +1/-1 for row and col
+    var char_next = _char_at_index(row, col+1);
+    if (char_next != ' ' && char_next != '\n') {
+      return false;
+    }
+    return true;
   }
 }
 
