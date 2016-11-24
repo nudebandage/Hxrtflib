@@ -1,6 +1,6 @@
 tags
 tests/.cache/
 *.n
-*.py
 *.txt
+*.pyc
 

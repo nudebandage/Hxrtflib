@@ -1,3 +1,6 @@
+# Add directory to look for source files
+-cp hxrtflib
 
--main hxrtflib.HxRtfLib
--python hxrtflib.py
+# These are the classes we wish to export
+hxrtflib.Hxrtflib
+-python output/python/hxrtflib.py
