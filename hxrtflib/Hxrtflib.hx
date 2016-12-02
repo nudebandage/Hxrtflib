@@ -1,11 +1,29 @@
 // The first insert into the text editor must happen at the beggining index
 // The default tag will not get applied if this doesn't happen
 
+// The tag is an id which represents a style
+
 package hxrtflib;
+
+import hxrtflib.Util;
+
 
 typedef Pos = {
   var row:Int;
   var col:Int;
+}
+
+
+typedef Change = Map<String, String>;
+typedef StyleId = Int;
+typedef Style = Map<String, String>;
+typedef Styles = Map<StyleId, Style>;
+
+
+typedef StyleExists = {
+  var exists:Bool;
+  var style_id:StyleId;
+  var style:Style;
 }
 
 
@@ -17,6 +35,9 @@ class Globals {
 
 
 class Hxrtflib {
+  var styles : Map<StyleId, Style> = new Map();
+  var overide_style = -1;
+
   public function new() {
   }
 
@@ -26,7 +47,9 @@ class Hxrtflib {
                         tag_at_index,
                         tag_add,
                         last_col,
-                        ignore_key) {
+                        ignore_key,
+                        insert_cursor_get,
+                        create_style) {
     _is_selected = is_selected;
     _first_selected_index = first_selected_index;
     _char_at_index = char_at_index;
@@ -34,6 +57,8 @@ class Hxrtflib {
     _tag_add = tag_add;
     _last_col = last_col;
     _ignore_key = ignore_key;
+    _insert_cursor_get = insert_cursor_get;
+    _create_style = create_style;
   }
 
   dynamic function _is_selected(row, col) { return true; }
@@ -46,6 +71,11 @@ class Hxrtflib {
   dynamic function _tag_add(tag, row, col) { return null; }
   dynamic function _last_col(row) { return 0; }
   dynamic function _ignore_key(event) { return false; }
+  dynamic function _insert_cursor_get() : Pos {
+    var pos:Pos = {row:0, col:0};
+    return pos;
+  }
+  dynamic function _create_style(tag, style) { return null; }
 
   public function insert_char(event, row, col) {
     // event, will be passed to ignored_key, use this
@@ -99,25 +129,172 @@ class Hxrtflib {
 
 
   function tag_replace(tag:Int, row, col) {
-    _tag_add(tag, row, col);
+    if (overide_style == -1) {
+      _tag_add(tag, row, col);
+    }
+    // Use the overide tag
+    else {
+      tag  = override_tag_get();
+      _tag_add(tag, row, col);
+      override_style_reset();
+    }
   }
 
 
-  // public function style_toggle(name, args, kwargs) {
-    // var pos:Pos = _char_at_index(
-    // if (_is_selected()) {
-      // change_style_selected(name, args, kwargs);
-    // }
-    // else {
-      // change_style_not_selected(name, args, kwargs);
-    // }
-  // }
+  function  override_style_reset() {
+    overide_style = -1;
+  }
 
 
-  // public function change_style_selected(name, args, kwargs) {
-    // if (is_word_extremity) {
-    // }
-  // }
+  function override_style_set(style) {
+    overide_style = style;
+  }
+
+
+  function override_tag_get() {
+    return overide_style;
+  }
+
+
+  public function style_change(change) : Void {
+    var cursor:Pos = _insert_cursor_get();
+    if (_is_selected(cursor.row, cursor.col)) {
+      style_with_selection(change);
+    }
+    else {
+      style_no_selection(change);
+    }
+  }
+
+
+  function style_no_selection(change) {
+    var cursor:Pos = _insert_cursor_get();
+    if (!is_word_extremity(cursor.row, cursor.col)) {
+      style_word(change, cursor.row, cursor.col);
+    }
+    else {
+      style_word_extremity(change, cursor.row, cursor.col);
+    }
+  }
+
+  function style_with_selection(change) {
+    // apply style to selection
+  }
+
+
+  function style_word(change, row, col) {
+    var word_start = word_start_get(row, col);
+    var word_end = word_end_get(row, col);
+
+    // apply style to every char based on its index
+    for (i in word_start...word_end) {
+      var style_id = style_from_change(change, row, i);
+      tag_replace(style_id, row,  i);
+    }
+  }
+
+
+  function style_word_extremity(change, row, col) {
+    // the next keypress should have a new style
+    var style_id = style_from_change(change, row, col);
+    override_style_set(style_id);
+  }
+
+
+  function style_from_change(change, row, col) : StyleId {
+    // given a requested change return the new/existing style
+    var se:StyleExists = style_exists(change, row, col);
+    if (se.exists)
+    {
+      return se.style_id;
+    }
+    else {
+      return style_new(se.style, row, col);
+    }
+  }
+
+
+  function style_exists(change:Change, row, col) : StyleExists {
+    // Returns a style to be used or created
+    var tag = _tag_at_index(row, col);
+    var style_at_cursor = styles.get(tag);
+    var remove:Bool;
+    var change_type = change.keys().next();
+    var change_value = change.get(change_type);
+    if (style_at_cursor == null) {
+      remove = false;
+    }
+    else if (change_value == style_at_cursor.get(change_type)) {
+      remove = true;
+    }
+    else {
+      remove = false;
+    }
+
+    // Build the required style
+    var required_style = Util.deepCopy(style_at_cursor);
+    if (remove) {
+      required_style.remove(change_type);
+    }
+    else {
+      required_style.set(change_type, change_value);
+    }
+
+    // Check if the style already exists
+    var se = {exists:false, style_id:-1, style:new Style()};
+    se.exists = false;
+    for (style_id in styles.keys()) {
+      var style = styles.get(style_id);
+      if (Util.mapSame(required_style, style)) {
+        se.exists = true;
+        se.style_id = style_id;
+        break;
+      }
+    }
+    if(!se.exists) {
+      se.style = required_style;
+    }
+    return se;
+  }
+
+
+  function style_new(style, row, col) : StyleId {
+    var style_id = make_name();
+    _create_style(style_id, style);
+    _tag_add(style_id, row, col);
+    styles[style_id] = style;
+    return style_id;
+  }
+
+
+  function make_name() : StyleId {
+    return Util.unique_int(styles.keys());
+  }
+
+
+  public function word_start_get(row, col) {
+    // row and col must be inside a word
+    var i = col;
+    while (true) {
+      if (is_word_start(row, i)) {
+        return i;
+      }
+      i--;
+    }
+  }
+
+
+  public function word_end_get(row, col) {
+    // row and col must be inside a word
+    var i = col;
+    while (true) {
+      if (is_word_end(row, i)) {
+        return i;
+      }
+      i++;
+    }
+  }
+
 
   public function is_word_extremity(row, col) {
     if (is_word_start(row, col)) {
@@ -152,4 +329,3 @@ class Hxrtflib {
     return true;
   }
 }
-

@@ -12,6 +12,7 @@ class Editor {
   public var cells : Map<String, Cell> = new Map();
   var max_rows = 10;
   var max_cols = 10;
+  var cursor:Pos = {row:0, col:0};
 
   public function new() {
   }
@@ -76,6 +77,13 @@ class Editor {
     return false;
   }
 
+  public dynamic function insert_cursor_get() {
+    return cursor;
+  }
+
+  public dynamic function create_style(style_id, style) {
+  }
+
   public function fill(?char:String="", ?selected:Bool=false, ?tag:Int=-1) {
     // Fill the text editor with the char
     var cell:Cell;
@@ -120,7 +128,19 @@ class Editor {
     cell.tag = tag;
     cells.set(key, cell);
   }
+
+  public function set_cell_range(row, col, amount, ?char="", ?selected:Bool=false, ?tag:Int=-1) {
+    for (i in 0...amount) {
+      set_cell(row, col, char, selected, tag);
+    }
+  }
+
+  public function set_cursor(row, col) {
+    cursor.row = row;
+    cursor.col = col;
+  }
 }
+
 
 class HxrtflibTester extends haxe.unit.TestCase {
   var editor : Editor;
@@ -136,7 +156,9 @@ class HxrtflibTester extends haxe.unit.TestCase {
                editor.tag_at_index,
                editor.tag_add,
                editor.last_col,
-               editor.ignore_key);
+               editor.ignore_key,
+               editor.insert_cursor_get,
+               editor.create_style);
   }
 }
 
@@ -250,6 +272,95 @@ class TestWordExtremity extends HxrtflibTester {
 }
 
 
+class TestWordStart extends HxrtflibTester {
+  public function test_start_col() {
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+    var word_length = 4;
+    editor.set_cell_range(row, col, word_length, "a");
+
+    var result = core.word_start_get(row, col);
+    assertEquals(col, result);
+
+    var result = core.word_start_get(row, col+1);
+    assertEquals(col, result);
+
+    editor.set_cell(row, col, " ");
+    var result = core.word_start_get(row, col+1);
+    assertEquals(col+1, result);
+  }
+
+  public function test_middle() {
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+    var word_length = 3;
+    editor.set_cell(row, col, " ");
+    editor.set_cell_range(row, col+1, word_length, "a");
+
+    var insert_col = col + 3;
+    var result = core.word_start_get(row, insert_col);
+    assertEquals(col + 1, result);
+  }
+}
+
+
+class TestWordEnd extends HxrtflibTester {
+  public function test_eol() {
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+    editor.set_cell(row, col, "a");
+    editor.set_cell(row, col+1, "b");
+    editor.set_cell(row, col+2, "\n");
+
+    var result = core.word_end_get(row, col);
+    assertEquals(col+1, result);
+
+    var result = core.word_end_get(row, col+1);
+    assertEquals(col+1, result);
+  }
+
+  public function test_middle() {
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+    var word_length = 3;
+    editor.set_cell_range(row, col, word_length, "a");
+    editor.set_cell(row, col+word_length+1, " ");
+
+    var insert_col = col + 1;
+    var result = core.word_end_get(row, insert_col);
+    assertEquals(col+word_length, result);
+
+    insert_col = col+word_length;
+    var result = core.word_end_get(row, insert_col);
+    assertEquals(col+word_length, result);
+  }
+}
+
+
+class TestChangeStyleNoSelect extends HxrtflibTester {
+  public function test_change_style_from_middle_of_word() {
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+    var tag = 2;
+    var word_length = 3;
+    editor.set_cell_range(row, col, word_length, "a", tag);
+    var change = ["weight" => "bold"];
+
+    var cursor_col = 2;
+    editor.set_cursor(row, cursor_col);
+    core.style_change(change);
+
+    // for (i in col...col+word_length) {
+      var i = col+1;
+      var result = editor.tag_at_index(row, i);
+      assertEquals(tag, result);
+    // }
+  }
+
+  // public function test_overide_removed_on_insert_char() {
+  // }
+}
+
 class HxrtflibTest {
   static function main(){
     var r = new haxe.unit.TestRunner();
@@ -257,6 +368,9 @@ class HxrtflibTest {
     r.add(new TestInsertWhenSelected());
     r.add(new TestInsertChar());
     r.add(new TestWordExtremity());
+    r.add(new TestWordStart());
+    r.add(new TestWordEnd());
+    // r.add(new TestChangeStyleNoSelect());
     r.run();
   }
 }

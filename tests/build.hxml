@@ -1,2 +1,5 @@
+# Add libraries
+-lib hxSet
+
 -neko tests.n
 -main HxrtflibTest
