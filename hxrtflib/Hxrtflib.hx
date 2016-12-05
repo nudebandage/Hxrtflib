@@ -136,14 +136,14 @@ class Hxrtflib {
     }
     // Use the overide tag
     else {
-      tag  = override_tag_get();
+      tag  = override_style_get();
       _tag_add(tag, row, col);
       override_style_reset();
     }
   }
 
 
-  function  override_style_reset() {
+  function override_style_reset() {
     overide_style = -1;
   }
 
@@ -153,7 +153,7 @@ class Hxrtflib {
   }
 
 
-  function override_tag_get() {
+  public function override_style_get() {
     return overide_style;
   }
 
@@ -161,7 +161,7 @@ class Hxrtflib {
   public function style_change(change) {
     var cursor:Pos = _insert_cursor_get();
     if (_is_selected(cursor.row, cursor.col)) {
-      // style_with_selection(change, cursor);
+      style_with_selection(change, cursor);
     }
     else {
       style_no_selection(change, cursor);
@@ -171,7 +171,7 @@ class Hxrtflib {
 
   function style_no_selection(change, cursor) {
     if (is_word_extremity(cursor.row, cursor.col)) {
-      // style_word_extremity(change, cursor.row, cursor.col);
+      style_word_extremity(change, cursor.row, cursor.col);
     }
     else {
       style_word(change, cursor.row, cursor.col);
@@ -189,7 +189,8 @@ class Hxrtflib {
 
     // apply style to every char based on its index
     var style_id;
-    for (i in word_start...word_end) {
+    // + 1 because we have to include the end index
+    for (i in word_start...word_end+1) {
       style_id = style_from_change(change, row, i);
       tag_replace(style_id, row,  i);
     }
@@ -218,25 +219,25 @@ class Hxrtflib {
 
   public function style_exists(change:Change, row, col) : StyleExists {
     // Returns a style to be used or created
-    var tag = _tag_at_index(row, col);
-    var style_at_cursor:Style = styles.get(tag);
+    var style_id = _tag_at_index(row, col);
+    var style_at_index:Style = styles.get(style_id);
     var remove:Bool;
     var change_type = change.keys().next();
     var change_value = change.get(change_type);
-    if (style_at_cursor == null) {
+    if (style_at_index == null) {
       remove = false;
     }
-    else if (change_value == style_at_cursor.get(change_type)) {
+    else if (change_value == style_at_index.get(change_type)) {
       remove = true;
     }
     else {
       remove = false;
     }
 
-    // Copy the style at the cursor
+    // Copy the style at the index
     var required_style = new Style();
-    for (key in style_at_cursor.keys()) {
-      var value = style_at_cursor.get(key);
+    for (key in style_at_index.keys()) {
+      var value = style_at_index.get(key);
       required_style.set(key, value);
     }
 

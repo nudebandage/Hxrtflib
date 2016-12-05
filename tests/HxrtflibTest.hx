@@ -45,19 +45,21 @@ class Editor {
 
   }
 
-  public dynamic function sel_at_index(row, col) : Bool {
+  public dynamic function cell_at_index(row, col) {
     var key = index_to_key(row, col);
-    return cells.get(key).selected;
+    return cells.get(key);
+  }
+
+  public dynamic function sel_at_index(row, col) : Bool {
+    return cell_at_index(row,col).selected;
   }
 
   public dynamic function char_at_index(row, col) : String {
-    var key = index_to_key(row, col);
-    return cells.get(key).text;
+    return cell_at_index(row,col).text;
   }
 
-  public dynamic function tag_at_index(row:Int, col:Int) : Int {
-    var key = index_to_key(row, col);
-    return cells.get(key).tag;
+  public dynamic function tag_at_index(row, col) : Int {
+    return cell_at_index(row,col).tag;
   }
 
   public dynamic function tag_add(tag, row, col) : Void {
@@ -131,7 +133,7 @@ class Editor {
   }
 
   public function set_cell_range(row, col, amount, ?char="", ?tag:Int=-1, ?selected:Bool=false) {
-    for (i in col...col+amount) {
+    for (i in col...col+amount+1) {
       set_cell(row, i, char, tag, selected);
     }
   }
@@ -339,7 +341,7 @@ class TestWordEnd extends HxrtflibTester {
 
 
 class TestChangeStyleNoSelect extends HxrtflibTester {
-  public function test_change_style_from_middle_of_word() {
+  public function atest_change_style_from_middle_of_word() {
     var row = Globals.START_ROW;
     var col = Globals.START_COL;
 
@@ -359,6 +361,41 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
       var result = editor.tag_at_index(row, i);
       assertEquals(new_tag, result);
     }
+  }
+
+  public function test_start_and_end_of_word() {
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+
+    var tag = Globals.DEFAULT_TAG;
+    var word_length = 3;
+
+    editor.set_cell_range(row, col, word_length, "a", tag);
+    editor.set_cell(row, col+word_length+1, " ", tag);
+
+    var change = ["weight" => "bold"];
+    var start = col;
+    var end = col + word_length;
+
+    editor.set_cursor(row, start);
+    core.style_change(change);
+    // make sure no style applied yet
+    var result = editor.tag_at_index(row, start);
+    assertEquals(tag, result);
+    // make sure the override style was set
+    var new_tag = Util.unique_int([tag]);
+    var result = core.override_style_get();
+    assertEquals(new_tag, result);
+
+    editor.set_cursor(row, end);
+    core.style_change(change);
+    // make sure no style applied yet
+    var result = editor.tag_at_index(row, end);
+    assertEquals(tag, result);
+    // make sure the override style was set
+    var new_tag = Util.unique_int([tag]);
+    var result = core.override_style_get();
+    assertEquals(new_tag, result);
   }
 
   // public function test_overide_removed_on_insert_char() {
