@@ -20,9 +20,10 @@ typedef Sel = {
 }
 
 
-typedef Change = Map<String, String>;
+typedef ChangeKey = String;
+typedef ChangeValue = String;
 typedef StyleId = Int;
-typedef Style = Map<String, String>;
+typedef Style = Map<ChangeKey, ChangeValue>;
 typedef Styles = Map<StyleId, Style>;
 
 
@@ -179,39 +180,39 @@ class Hxrtflib {
   }
 
 
-  public function style_change(change) {
+  public function style_change(change_key, change_value) {
     var cursor:Pos = _insert_cursor_get();
     if (_is_selected(cursor.row, cursor.col)) {
-      style_with_selection(change, cursor);
+      style_with_selection(change_key, change_value, cursor);
     }
     else {
-      style_no_selection(change, cursor);
+      style_no_selection(change_key, change_value, cursor);
     }
     consumer_run(cursor.row, cursor.col);
   }
 
 
-  function style_no_selection(change, cursor) {
+  function style_no_selection(change_key, change_value, cursor) {
     if (is_word_extremity(cursor.row, cursor.col)) {
-      style_word_extremity(change, cursor.row, cursor.col);
+      style_word_extremity(change_key, change_value, cursor.row, cursor.col);
     }
     else {
       var left = word_start_get(cursor.row, cursor.col);
       var right = word_end_get(cursor.row, cursor.col);
       var start:Pos = {row: cursor.row, col: left};
       var end:Pos = {row: cursor.row, col: right};
-      style_word_range(change, start, end);
+      style_word_range(change_key, change_value, start, end);
     }
   }
 
 
-  function style_with_selection(change, cursor) {
+  function style_with_selection(change_key, change_value, cursor) {
     var sel = _sel_index_get(cursor.row, cursor.col);
-    style_word_range(change, sel.start, sel.end);
+    style_word_range(change_key, change_value, sel.start, sel.end);
   }
 
 
-  function style_word_range(change, start, end) {
+  function style_word_range(change_key, change_value, start, end) {
     // apply style to every char based on its index
     // + 1 because we have to include the end index
     var _start_col, _end_col;
@@ -230,23 +231,23 @@ class Hxrtflib {
       }
       // + 1 because we have to include the end index
       for (c in _start_col..._end_col+1) {
-        var style_id = style_from_change(change, r, c);
+        var style_id = style_from_change(change_key, change_value, r, c);
         tag_replace(style_id, r,  c);
       }
     }
   }
 
 
-  function style_word_extremity(change, row, col) {
+  function style_word_extremity(change_key, change_value, row, col) {
     // the next keypress should have a new style
-    var style_id = style_from_change(change, row, col);
+    var style_id = style_from_change(change_key, change_value, row, col);
     override_style_set(style_id);
   }
 
 
-  function style_from_change(change, row, col) : StyleId {
+  function style_from_change(change_key, change_value, row, col) : StyleId {
     // given a requested change return the new/existing style
-    var se:StyleExists = style_exists(change, row, col);
+    var se:StyleExists = style_exists(change_key, change_value, row, col);
     if (se.exists) {
       return se.style_id;
     }
@@ -256,17 +257,15 @@ class Hxrtflib {
   }
 
 
-  public function style_exists(change:Change, row, col) : StyleExists {
+  public function style_exists(change_key, change_value, row, col) : StyleExists {
     // Returns a style to be used or created
     var style_id = _tag_at_index(row, col);
     var style_at_index:Style = styles.get(style_id);
     var remove:Bool;
-    var change_type = change.keys().next();
-    var change_value = change.get(change_type);
     if (style_at_index == null) {
       remove = false;
     }
-    else if (change_value == style_at_index.get(change_type)) {
+    else if (change_value == style_at_index.get(change_key)) {
       remove = true;
     }
     else {
@@ -282,10 +281,10 @@ class Hxrtflib {
 
     // Build the required style
     if (remove) {
-      required_style.remove(change_type);
+      required_style.remove(change_key);
     }
     else {
-      required_style.set(change_type, change_value);
+      required_style.set(change_key, change_value);
     }
 
     // Check if the style already exists
@@ -312,11 +311,6 @@ class Hxrtflib {
     styles[style_id] = style;
     return style_id;
   }
-
-
-  // public style_modify(style_id, change) {
-    // styles[style_id].set(
-  // }
 
 
   public function style_id_make() : StyleId {

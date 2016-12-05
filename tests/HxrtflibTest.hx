@@ -376,10 +376,11 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     editor.set_cell_range(row, col, word_length, "a", tag);
     editor.set_cell(row, col+word_length+1, " ", tag);
 
-    var change = ["weight" => "bold"];
+    var change_key = "weight";
+    var change_value = "bold";
     var cursor_col = 2;
     editor.set_cursor(row, cursor_col);
-    core.style_change(change);
+    core.style_change(change_key, change_value);
 
     // Bold the entire word
     var new_tag = Util.unique_int([tag]);
@@ -388,13 +389,13 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
       assertEquals(new_tag, result);
     }
     // Unbold the entire word
-    core.style_change(change);
+    core.style_change(change_key, change_value);
      for (i in col...col+word_length) {
       var result = editor.tag_at_index(row, i);
       assertEquals(tag, result);
     }
     // Make sure the tag is reused
-    core.style_change(change);
+    core.style_change(change_key, change_value);
     for (i in col...col+word_length) {
       var result = editor.tag_at_index(row, i);
       assertEquals(new_tag, result);
@@ -411,12 +412,13 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     editor.set_cell_range(row, col, word_length, "a", tag);
     editor.set_cell(row, col+word_length+1, " ", tag);
 
-    var change = ["weight" => "bold"];
+    var change_key = "weight";
+    var change_value = "bold";
     var start = col;
     var end = col + word_length;
 
     editor.set_cursor(row, start);
-    core.style_change(change);
+    core.style_change(change_key, change_value);
     // make sure no style applied yet
     var result = editor.tag_at_index(row, start);
     assertEquals(tag, result);
@@ -426,7 +428,7 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     assertEquals(new_tag, result);
 
     editor.set_cursor(row, end);
-    core.style_change(change);
+    core.style_change(change_key, change_value);
     // make sure no style applied yet
     var result = editor.tag_at_index(row, end);
     assertEquals(tag, result);
@@ -456,9 +458,10 @@ class TestChangeStyleWithSelection extends HxrtflibTester {
     var sel_len = sel_start - sel_end;
     editor.set_cell_range(row, sel_start, sel_len, "a", tag, true);
 
-    var change = ["weight" => "bold"];
+    var change_key = "weight";
+    var change_value = "bold";
     editor.set_cursor(row, sel_start);
-    core.style_change(change);
+    core.style_change(change_key, change_value);
     // make sure style applied to start
     var new_tag = Util.unique_int([tag]);
     var result = editor.tag_at_index(row, sel_start);
@@ -486,9 +489,10 @@ class TestOverride extends HxrtflibTester {
     editor.set_cell(row, col, "a", tag);
 
     // This sets our override style
-    var change = ["weight" => "bold"];
+    var change_key = "weight";
+    var change_value = "bold";
     editor.set_cursor(row, col);
-    core.style_change(change);
+    core.style_change(change_key, change_value);
     core.insert_char('a', row, col+1);
 
     var new_tag = Util.unique_int([tag]);
@@ -503,9 +507,10 @@ class TestOverride extends HxrtflibTester {
     editor.set_cell(row, col, "a", tag);
 
     // This sets our override style
-    var change = ["weight" => "bold"];
+    var change_key = "weight";
+    var change_value = "bold";
     editor.set_cursor(row, col);
-    core.style_change(change);
+    core.style_change(change_key, change_value);
     core.insert_char('space', row, col+1);
 
     var result = editor.tag_at_index(row, col+1);
@@ -519,9 +524,10 @@ class TestOverride extends HxrtflibTester {
     editor.set_cell(row, col, "a", tag);
 
     // This sets our override style
-    var change = ["weight" => "bold"];
+    var change_key = "weight";
+    var change_value = "bold";
     editor.set_cursor(row, col);
-    core.style_change(change);
+    core.style_change(change_key, change_value);
     core.mouse_clicked(row, col);
 
     var result = core.override_style_get();
@@ -536,8 +542,8 @@ class TestConsumer extends HxrtflibTester {
     var row = Globals.START_ROW;
     var col = Globals.START_COL;
 
-    var test_values:Change= new Map();
-    var test = function(a:String, b:String) {
+    var test_values = new Map();
+    var test = function(a, b) {
       test_values.set(a, b);
     }
     core.register_consumer(test);
@@ -548,8 +554,9 @@ class TestConsumer extends HxrtflibTester {
     editor.set_cell(row, col+word_length + 1, " ", tag);
     var cursor_col = col + word_length - 1;
     editor.set_cursor(row, cursor_col);
-    var change = ["weight" => "bold"];
-    core.style_change(change);
+    var change_key = "weight";
+    var change_value = "bold";
+    core.style_change(change_key, change_value);
     assertEquals("bold", test_values.get("weight"));
 
     // check the clear signal got sent
@@ -561,8 +568,8 @@ class TestConsumer extends HxrtflibTester {
     var row = Globals.START_ROW;
     var col = Globals.START_COL;
 
-    var test_values:Change = new Map();
-    var test = function(a:String, b:String) {
+    var test_values = new Map();
+    var test = function(a, b) {
       test_values.set(a, b);
     }
     core.register_consumer(test);
