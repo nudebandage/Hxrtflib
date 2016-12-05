@@ -356,7 +356,20 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     editor.set_cursor(row, cursor_col);
     core.style_change(change);
 
+    // Bold the entire word
     var new_tag = Util.unique_int([tag]);
+    for (i in col...col+word_length) {
+      var result = editor.tag_at_index(row, i);
+      assertEquals(new_tag, result);
+    }
+    // Unbold the entire word
+    core.style_change(change);
+     for (i in col...col+word_length) {
+      var result = editor.tag_at_index(row, i);
+      assertEquals(tag, result);
+    }
+    // Make sure the tag is reused
+    core.style_change(change);
     for (i in col...col+word_length) {
       var result = editor.tag_at_index(row, i);
       assertEquals(new_tag, result);
