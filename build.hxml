@@ -6,4 +6,4 @@
 
 # These are the classes we wish to export
 hxrtflib.Hxrtflib
--python output/python/hxrtflib.py
+-python output/pyhxrtflib/hxrtflib.py
