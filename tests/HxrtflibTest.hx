@@ -87,6 +87,31 @@ class Editor {
   public dynamic function create_style(style_id, style) {
   }
 
+  public dynamic function sel_index_get(row, col) {
+    // limited to same row;
+    var left, right;
+    right = col;
+    for (c in col...last_col(row)+1) {
+      if (sel_at_index(row, c)) {
+        right = c;
+      }
+      else {
+        break;
+      }
+    }
+    left = Globals.START_COL;
+    for (c in Globals.START_COL...col+1) {
+      if (!sel_at_index(row, c)) {
+        left = c-1;
+        break;
+      }
+    }
+    var start, end;
+    start = {row:row, col:left};
+    end = {row:row, col:right};
+    return {start:start, end:end};
+  }
+
   public function fill(?char:String="", ?selected:Bool=false, ?tag:Int=-1) {
     // Fill the text editor with the char
     var cell:Cell;
@@ -112,7 +137,6 @@ class Editor {
     var j = max_cols - 1;
     while (j >= 0) {
       key = index_to_key(row, j);
-
       char = cells.get(key).text;
       if (char != "") {
         col = j;
@@ -161,7 +185,8 @@ class HxrtflibTester extends haxe.unit.TestCase {
                editor.last_col,
                editor.ignore_key,
                editor.insert_cursor_get,
-               editor.create_style);
+               editor.create_style,
+               editor.sel_index_get);
   }
 }
 
@@ -341,7 +366,7 @@ class TestWordEnd extends HxrtflibTester {
 
 
 class TestChangeStyleNoSelect extends HxrtflibTester {
-  public function atest_change_style_from_middle_of_word() {
+  public function test_change_style_from_middle_of_word() {
     var row = Globals.START_ROW;
     var col = Globals.START_COL;
 
@@ -416,6 +441,45 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
 }
 
 
+class TestChangeStyleWithSelection extends HxrtflibTester {
+  public function test_style_with_selection() {
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+
+    var tag = Globals.DEFAULT_TAG;
+    var word_length = 5;
+
+    // Put some text with default tag
+    editor.set_cell_range(row, col, word_length, "a", tag, false);
+    editor.set_cell(row, col+word_length+1, " ", tag, false);
+
+    // Select some of the text
+    var sel_start = col + 1;
+    var sel_end = col + word_length - 1;
+    var sel_len = sel_start - sel_end;
+    editor.set_cell_range(row, sel_start, sel_len, "a", tag, true);
+
+    var change = ["weight" => "bold"];
+    editor.set_cursor(row, sel_start);
+    core.style_change(change);
+    // make sure style applied to start
+    var new_tag = Util.unique_int([tag]);
+    var result = editor.tag_at_index(row, sel_start);
+    assertEquals(new_tag, result);
+
+    // make sure style applied to end
+    var result = editor.tag_at_index(row, sel_end);
+    assertEquals(new_tag, result);
+
+    // make sure end points + 1 not styled
+    var result = editor.tag_at_index(row, sel_start - 1);
+    assertEquals(tag, result);
+    var result = editor.tag_at_index(row, sel_end + 1);
+    assertEquals(tag, result);
+  }
+}
+
+
 class TestMapSame extends haxe.unit.TestCase {
   function test_works() {
     var map1 = new Map();
@@ -443,6 +507,7 @@ class HxrtflibTest {
     r.add(new TestWordEnd());
     r.add(new TestMapSame());
     r.add(new TestChangeStyleNoSelect());
+    r.add(new TestChangeStyleWithSelection());
     r.run();
   }
 }

@@ -14,6 +14,12 @@ typedef Pos = {
 }
 
 
+typedef Sel = {
+  var end:Pos;
+  var start:Pos;
+}
+
+
 typedef Change = Map<String, String>;
 typedef StyleId = Int;
 typedef Style = Map<String, String>;
@@ -51,7 +57,8 @@ class Hxrtflib {
                         last_col,
                         ignore_key,
                         insert_cursor_get,
-                        create_style) {
+                        create_style,
+                        sel_index_get) {
     _is_selected = is_selected;
     _first_selected_index = first_selected_index;
     _char_at_index = char_at_index;
@@ -61,6 +68,7 @@ class Hxrtflib {
     _ignore_key = ignore_key;
     _insert_cursor_get = insert_cursor_get;
     _create_style = create_style;
+    _sel_index_get = sel_index_get;
   }
 
   dynamic function _is_selected(row, col) { return true; }
@@ -78,6 +86,13 @@ class Hxrtflib {
     return pos;
   }
   dynamic function _create_style(tag, style) { return null; }
+  dynamic function _sel_index_get(row, col) {
+    var start:Pos = {row:0, col:0};
+    var end:Pos = {row:0, col:0};
+    var sel:Sel = {start:start, end:end};
+    return sel;
+  }
+
 
   public function insert_char(event, row, col) {
     // event, will be passed to ignored_key, use this
@@ -101,7 +116,7 @@ class Hxrtflib {
   public function insert_when_cursor_at_start(row) {
     var tag : Int;
     var char_at_right = _char_at_index(row, Globals.START_COL+1);
-    // Data exists after the cursour, so take that setting
+    // Data exists after the cursor, so take that setting
     if (char_at_right != "\n" && char_at_right != "") {
       tag = _tag_at_index(row, Globals.START_COL + 1);
     }
@@ -174,25 +189,43 @@ class Hxrtflib {
       style_word_extremity(change, cursor.row, cursor.col);
     }
     else {
-      style_word(change, cursor.row, cursor.col);
+      var left = word_start_get(cursor.row, cursor.col);
+      var right = word_end_get(cursor.row, cursor.col);
+      var start:Pos = {row: cursor.row, col: left};
+      var end:Pos = {row: cursor.row, col: right};
+      style_word_range(change, start, end);
     }
   }
 
+
   function style_with_selection(change, cursor) {
-    // apply style to selection
+    var sel = _sel_index_get(cursor.row, cursor.col);
+    style_word_range(change, sel.start, sel.end);
   }
 
 
-  function style_word(change, row, col) {
-    var word_start = word_start_get(row, col);
-    var word_end = word_end_get(row, col);
-
+  function style_word_range(change, start, end) {
     // apply style to every char based on its index
-    var style_id;
     // + 1 because we have to include the end index
-    for (i in word_start...word_end+1) {
-      style_id = style_from_change(change, row, i);
-      tag_replace(style_id, row,  i);
+    var _start_col, _end_col;
+    for (r in start.row...end.row+1) {
+      if (r == start.row) {
+        _start_col = start.col;
+      }
+      else {
+        _start_col = Globals.START_COL;
+      }
+      if (r == end.row) {
+        _end_col = end.col;
+      }
+      else {
+        _end_col = _last_col(r);
+      }
+      // + 1 because we have to include the end index
+      for (c in _start_col..._end_col+1) {
+        var style_id = style_from_change(change, r, c);
+        tag_replace(style_id, r,  c);
+      }
     }
   }
 
@@ -207,8 +240,7 @@ class Hxrtflib {
   function style_from_change(change, row, col) : StyleId {
     // given a requested change return the new/existing style
     var se:StyleExists = style_exists(change, row, col);
-    if (se.exists)
-    {
+    if (se.exists) {
       return se.style_id;
     }
     else {
@@ -246,8 +278,6 @@ class Hxrtflib {
       required_style.remove(change_type);
     }
     else {
-      // var se = {exists:false, style_id:-1, style:new Style()};
-      // return se;
       required_style.set(change_type, change_value);
     }
 
