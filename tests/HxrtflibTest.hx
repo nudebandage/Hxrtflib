@@ -1,4 +1,5 @@
 import hxrtflib.Hxrtflib;
+import hxrtflib.Util;
 
 typedef Cell = {
   var text : String;
@@ -120,7 +121,7 @@ class Editor {
   return col;
   }
 
-  public function set_cell(row, col, ?char="", ?selected:Bool=false, ?tag:Int=-1) {
+  public function set_cell(row, col, ?char="", ?tag:Int=-1, ?selected:Bool=false) {
     var key = index_to_key(row, col);
     var cell = cells.get(key);
     cell.text = char;
@@ -129,9 +130,9 @@ class Editor {
     cells.set(key, cell);
   }
 
-  public function set_cell_range(row, col, amount, ?char="", ?selected:Bool=false, ?tag:Int=-1) {
-    for (i in 0...amount) {
-      set_cell(row, col, char, selected, tag);
+  public function set_cell_range(row, col, amount, ?char="", ?tag:Int=-1, ?selected:Bool=false) {
+    for (i in col...col+amount) {
+      set_cell(row, i, char, tag, selected);
     }
   }
 
@@ -203,8 +204,8 @@ class TestInsertWhenSelected extends HxrtflibTester {
     // select all cells and apply default tag
     editor.fill("a", true, Globals.DEFAULT_TAG);
     // remove a selection and apply a different tag to start of selection
-    editor.set_cell(row, sel_start_col - 1, false, Globals.DEFAULT_TAG);
-    editor.set_cell(row, sel_start_col, true, tag);
+    editor.set_cell(row, sel_start_col - 1, Globals.DEFAULT_TAG, false);
+    editor.set_cell(row, sel_start_col, tag, true);
 
     var insert_col = sel_start_col + 2;
     core.insert_when_selected(row, insert_col);
@@ -341,25 +342,45 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
   public function test_change_style_from_middle_of_word() {
     var row = Globals.START_ROW;
     var col = Globals.START_COL;
-    var tag = 2;
-    var word_length = 3;
-    editor.set_cell_range(row, col, word_length, "a", tag);
-    var change = ["weight" => "bold"];
 
+    var tag = Globals.DEFAULT_TAG;
+    var word_length = 3;
+
+    editor.set_cell_range(row, col, word_length, "a", tag);
+    editor.set_cell(row, col+word_length+1, " ", tag);
+
+    var change = ["weight" => "bold"];
     var cursor_col = 2;
     editor.set_cursor(row, cursor_col);
     core.style_change(change);
 
-    // for (i in col...col+word_length) {
-      var i = col+1;
+    var new_tag = Util.unique_int([tag]);
+    for (i in col...col+word_length) {
       var result = editor.tag_at_index(row, i);
-      assertEquals(tag, result);
-    // }
+      assertEquals(new_tag, result);
+    }
   }
 
   // public function test_overide_removed_on_insert_char() {
   // }
 }
+
+
+class TestMapSame extends haxe.unit.TestCase {
+  function test_works() {
+    var map1 = new Map();
+    map1.set("1", "1");
+    var map2 = new Map();
+    map2.set("2", "2");
+    var result = Util.mapSame(map1, map2);
+    assertEquals(false, result);
+    map2.remove("2");
+    map2.set("1", "1");
+    var result = Util.mapSame(map1, map2);
+    assertEquals(true, result);
+  }
+}
+
 
 class HxrtflibTest {
   static function main(){
@@ -370,7 +391,8 @@ class HxrtflibTest {
     r.add(new TestWordExtremity());
     r.add(new TestWordStart());
     r.add(new TestWordEnd());
-    // r.add(new TestChangeStyleNoSelect());
+    r.add(new TestMapSame());
+    r.add(new TestChangeStyleNoSelect());
     r.run();
   }
 }

@@ -2,4 +2,5 @@
 -lib hxSet
 
 -neko tests.n
+# -python tests.n
 -main HxrtflibTest

@@ -28,17 +28,19 @@ typedef StyleExists = {
 
 
 class Globals {
-  static public var DEFAULT_TAG : Int = 1;
+  static public var DEFAULT_TAG : Int = 0;
   static public var START_ROW : Int = 1;
   static public var START_COL : Int = 0;
 }
 
 
 class Hxrtflib {
-  var styles : Map<StyleId, Style> = new Map();
+  static var styles : Map<StyleId, Style> = new Map();
   var overide_style = -1;
 
   public function new() {
+    var map = new Style();
+    styles.set(Globals.DEFAULT_TAG, map);
   }
 
   public function setup(is_selected,
@@ -156,28 +158,27 @@ class Hxrtflib {
   }
 
 
-  public function style_change(change) : Void {
+  public function style_change(change) {
     var cursor:Pos = _insert_cursor_get();
     if (_is_selected(cursor.row, cursor.col)) {
-      style_with_selection(change);
+      // style_with_selection(change, cursor);
     }
     else {
-      style_no_selection(change);
+      style_no_selection(change, cursor);
     }
   }
 
 
-  function style_no_selection(change) {
-    var cursor:Pos = _insert_cursor_get();
-    if (!is_word_extremity(cursor.row, cursor.col)) {
+  function style_no_selection(change, cursor) {
+    if (is_word_extremity(cursor.row, cursor.col)) {
+      // style_word_extremity(change, cursor.row, cursor.col);
+    }
+    else {
       style_word(change, cursor.row, cursor.col);
     }
-    else {
-      style_word_extremity(change, cursor.row, cursor.col);
-    }
   }
 
-  function style_with_selection(change) {
+  function style_with_selection(change, cursor) {
     // apply style to selection
   }
 
@@ -187,8 +188,9 @@ class Hxrtflib {
     var word_end = word_end_get(row, col);
 
     // apply style to every char based on its index
+    var style_id;
     for (i in word_start...word_end) {
-      var style_id = style_from_change(change, row, i);
+      style_id = style_from_change(change, row, i);
       tag_replace(style_id, row,  i);
     }
   }
@@ -209,15 +211,15 @@ class Hxrtflib {
       return se.style_id;
     }
     else {
-      return style_new(se.style, row, col);
+      return style_new(se.style);
     }
   }
 
 
-  function style_exists(change:Change, row, col) : StyleExists {
+  public function style_exists(change:Change, row, col) : StyleExists {
     // Returns a style to be used or created
     var tag = _tag_at_index(row, col);
-    var style_at_cursor = styles.get(tag);
+    var style_at_cursor:Style = styles.get(tag);
     var remove:Bool;
     var change_type = change.keys().next();
     var change_value = change.get(change_type);
@@ -231,12 +233,20 @@ class Hxrtflib {
       remove = false;
     }
 
+    // Copy the style at the cursor
+    var required_style = new Style();
+    for (key in style_at_cursor.keys()) {
+      var value = style_at_cursor.get(key);
+      required_style.set(key, value);
+    }
+
     // Build the required style
-    var required_style = Util.deepCopy(style_at_cursor);
     if (remove) {
       required_style.remove(change_type);
     }
     else {
+      // var se = {exists:false, style_id:-1, style:new Style()};
+      // return se;
       required_style.set(change_type, change_value);
     }
 
@@ -258,17 +268,21 @@ class Hxrtflib {
   }
 
 
-  function style_new(style, row, col) : StyleId {
-    var style_id = make_name();
+  public function style_new(style) : StyleId {
+    var style_id = style_id_make();
     _create_style(style_id, style);
-    _tag_add(style_id, row, col);
     styles[style_id] = style;
     return style_id;
   }
 
 
-  function make_name() : StyleId {
-    return Util.unique_int(styles.keys());
+  // public style_modify(style_id, change) {
+    // styles[style_id].set(
+  // }
+
+
+  public function style_id_make() : StyleId {
+    return Util.unique_int([for (x in styles.keys()) x]);
   }
 
 
@@ -296,7 +310,7 @@ class Hxrtflib {
   }
 
 
-  public function is_word_extremity(row, col) {
+  public function is_word_extremity(row, col) : Bool {
     if (is_word_start(row, col)) {
       return true;
     }
@@ -305,6 +319,7 @@ class Hxrtflib {
     }
     return false;
   }
+
 
   function is_word_start(row, col) {
     if (col == Globals.START_COL) {
@@ -317,6 +332,7 @@ class Hxrtflib {
     }
     return false;
   }
+
 
   function is_word_end(row, col) {
     // TODO how to test for out of bounds... -1?
