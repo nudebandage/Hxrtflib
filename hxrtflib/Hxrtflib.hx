@@ -58,7 +58,8 @@ class Hxrtflib {
                         ignore_key,
                         insert_cursor_get,
                         create_style,
-                        sel_index_get) {
+                        sel_index_get,
+                        mouse_clicked) {
     _is_selected = is_selected;
     _first_selected_index = first_selected_index;
     _char_at_index = char_at_index;
@@ -69,6 +70,7 @@ class Hxrtflib {
     _insert_cursor_get = insert_cursor_get;
     _create_style = create_style;
     _sel_index_get = sel_index_get;
+    _mouse_clicked = mouse_clicked;
   }
 
   dynamic function _is_selected(row, col) { return true; }
@@ -92,6 +94,7 @@ class Hxrtflib {
     var sel:Sel = {start:start, end:end};
     return sel;
   }
+  dynamic function _mouse_clicked(row, col) { return null; }
 
 
   public function insert_char(event, row, col) {
@@ -110,6 +113,11 @@ class Hxrtflib {
       var tag = _tag_at_index(row, col - 1);
       tag_replace(tag, row, col);
     }
+  }
+
+
+  public function mouse_clicked(row, col) {
+    override_style_reset();
   }
 
 

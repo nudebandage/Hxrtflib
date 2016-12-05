@@ -112,6 +112,9 @@ class Editor {
     return {start:start, end:end};
   }
 
+  public function mouse_clicked(row, col) {
+  }
+
   public function fill(?char:String="", ?selected:Bool=false, ?tag:Int=-1) {
     // Fill the text editor with the char
     var cell:Cell;
@@ -186,7 +189,8 @@ class HxrtflibTester extends haxe.unit.TestCase {
                editor.ignore_key,
                editor.insert_cursor_get,
                editor.create_style,
-               editor.sel_index_get);
+               editor.sel_index_get,
+               editor.mouse_clicked);
   }
 }
 
@@ -435,9 +439,6 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     var result = core.override_style_get();
     assertEquals(new_tag, result);
   }
-
-  // public function test_overide_removed_on_insert_char() {
-  // }
 }
 
 
@@ -472,12 +473,65 @@ class TestChangeStyleWithSelection extends HxrtflibTester {
     assertEquals(new_tag, result);
 
     // make sure end points + 1 not styled
-    var result = editor.tag_at_index(row, sel_start - 1);
-    assertEquals(tag, result);
-    var result = editor.tag_at_index(row, sel_end + 1);
-    assertEquals(tag, result);
+    // var result = editor.tag_at_index(row, sel_start - 1);
+    // assertEquals(tag, result);
+    // var result = editor.tag_at_index(row, sel_end + 1);
+    // assertEquals(tag, result);
   }
 }
+
+
+class TestOverride extends HxrtflibTester {
+  public function test_overide_used_on_insert() {
+    var tag = Globals.DEFAULT_TAG;
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+    editor.set_cell(row, col, "a", tag);
+
+    // This sets our override style
+    var change = ["weight" => "bold"];
+    editor.set_cursor(row, col);
+    core.style_change(change);
+    core.insert_char('a', row, col+1);
+
+    var new_tag = Util.unique_int([tag]);
+    var result = editor.tag_at_index(row, col+1);
+    assertEquals(new_tag, result);
+  }
+
+  public function test_override_canceled_on_some_events() {
+    var tag = Globals.DEFAULT_TAG;
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+    editor.set_cell(row, col, "a", tag);
+
+    // This sets our override style
+    var change = ["weight" => "bold"];
+    editor.set_cursor(row, col);
+    core.style_change(change);
+    core.insert_char('space', row, col+1);
+
+    var result = editor.tag_at_index(row, col+1);
+    assertEquals(-1, result);
+  }
+
+  public function test_override_canceled_on_mouse() {
+    var tag = Globals.DEFAULT_TAG;
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+    editor.set_cell(row, col, "a", tag);
+
+    // This sets our override style
+    var change = ["weight" => "bold"];
+    editor.set_cursor(row, col);
+    core.style_change(change);
+    core.mouse_clicked(row, col);
+
+    var result = core.override_style_get();
+    assertEquals(-1, result);
+  }
+}
+
 
 
 class TestMapSame extends haxe.unit.TestCase {
@@ -508,6 +562,7 @@ class HxrtflibTest {
     r.add(new TestMapSame());
     r.add(new TestChangeStyleNoSelect());
     r.add(new TestChangeStyleWithSelection());
+    r.add(new TestOverride());
     r.run();
   }
 }
