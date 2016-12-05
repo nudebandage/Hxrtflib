@@ -43,6 +43,7 @@ class Globals {
 class Hxrtflib {
   static var styles : Map<StyleId, Style> = new Map();
   var overide_style = -1;
+  static var consumers = new Array();
 
   public function new() {
     var map = new Style();
@@ -58,8 +59,7 @@ class Hxrtflib {
                         ignore_key,
                         insert_cursor_get,
                         create_style,
-                        sel_index_get,
-                        mouse_clicked) {
+                        sel_index_get) {
     _is_selected = is_selected;
     _first_selected_index = first_selected_index;
     _char_at_index = char_at_index;
@@ -70,7 +70,6 @@ class Hxrtflib {
     _insert_cursor_get = insert_cursor_get;
     _create_style = create_style;
     _sel_index_get = sel_index_get;
-    _mouse_clicked = mouse_clicked;
   }
 
   dynamic function _is_selected(row, col) { return true; }
@@ -94,8 +93,6 @@ class Hxrtflib {
     var sel:Sel = {start:start, end:end};
     return sel;
   }
-  dynamic function _mouse_clicked(row, col) { return null; }
-
 
   public function insert_char(event, row, col) {
     // event, will be passed to ignored_key, use this
@@ -118,6 +115,7 @@ class Hxrtflib {
 
   public function mouse_clicked(row, col) {
     override_style_reset();
+    consumer_run(row, col);
   }
 
 
@@ -189,6 +187,7 @@ class Hxrtflib {
     else {
       style_no_selection(change, cursor);
     }
+    consumer_run(cursor.row, cursor.col);
   }
 
 
@@ -382,5 +381,23 @@ class Hxrtflib {
       return false;
     }
     return true;
+  }
+
+
+  public function register_consumer(func) {
+    consumers.push(func);
+  }
+
+  public function consumer_run(row, col) {
+    // consumer functions must handle "reset"
+    var style_id = _tag_at_index(row, col);
+    var style = styles.get(style_id);
+    for (func in consumers) {
+      func("reset", "");
+      for (style_type in style.keys()) {
+        var value = style.get(style_type);
+        func(style_type, value);
+      }
+    }
   }
 }

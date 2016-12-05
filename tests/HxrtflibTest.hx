@@ -112,9 +112,6 @@ class Editor {
     return {start:start, end:end};
   }
 
-  public function mouse_clicked(row, col) {
-  }
-
   public function fill(?char:String="", ?selected:Bool=false, ?tag:Int=-1) {
     // Fill the text editor with the char
     var cell:Cell;
@@ -189,8 +186,7 @@ class HxrtflibTester extends haxe.unit.TestCase {
                editor.ignore_key,
                editor.insert_cursor_get,
                editor.create_style,
-               editor.sel_index_get,
-               editor.mouse_clicked);
+               editor.sel_index_get);
   }
 }
 
@@ -481,6 +477,7 @@ class TestChangeStyleWithSelection extends HxrtflibTester {
 }
 
 
+// These tests are a bit pointless, might have to refactor ignore_keys
 class TestOverride extends HxrtflibTester {
   public function test_overide_used_on_insert() {
     var tag = Globals.DEFAULT_TAG;
@@ -533,6 +530,51 @@ class TestOverride extends HxrtflibTester {
 }
 
 
+class TestConsumer extends HxrtflibTester {
+  public function test_add() {
+    var tag = Globals.DEFAULT_TAG;
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+
+    var test_values:Change= new Map();
+    var test = function(a:String, b:String) {
+      test_values.set(a, b);
+    }
+    core.register_consumer(test);
+
+    // Insert a bold word, the space at the end is not bolded
+    var word_length = 3;
+    editor.set_cell_range(row, col, word_length, "a", tag);
+    editor.set_cell(row, col+word_length + 1, " ", tag);
+    var cursor_col = col + word_length - 1;
+    editor.set_cursor(row, cursor_col);
+    var change = ["weight" => "bold"];
+    core.style_change(change);
+    assertEquals("bold", test_values.get("weight"));
+
+    // check the clear signal got sent
+    assertEquals("reset", test_values.keys().next());
+  }
+
+  public function test_mouse_triggers_consumer() {
+    var tag = Globals.DEFAULT_TAG;
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+
+    var test_values:Change = new Map();
+    var test = function(a:String, b:String) {
+      test_values.set(a, b);
+    }
+    core.register_consumer(test);
+
+    editor.set_cell(row, col, "a", tag);
+    core.mouse_clicked(row, col);
+
+    // check the clear signal got sent
+    assertEquals("reset", test_values.keys().next());
+  }
+}
+
 
 class TestMapSame extends haxe.unit.TestCase {
   function test_works() {
@@ -563,6 +605,7 @@ class HxrtflibTest {
     r.add(new TestChangeStyleNoSelect());
     r.add(new TestChangeStyleWithSelection());
     r.add(new TestOverride());
+    r.add(new TestConsumer());
     r.run();
   }
 }
