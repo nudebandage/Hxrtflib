@@ -60,6 +60,7 @@ class Hxrtflib {
                         ignore_key,
                         insert_cursor_get,
                         create_style,
+                        modify_style,
                         sel_index_get) {
     _is_selected = is_selected;
     _first_selected_index = first_selected_index;
@@ -70,6 +71,7 @@ class Hxrtflib {
     _ignore_key = ignore_key;
     _insert_cursor_get = insert_cursor_get;
     _create_style = create_style;
+    _modify_style = modify_style;
     _sel_index_get = sel_index_get;
   }
 
@@ -87,7 +89,8 @@ class Hxrtflib {
     var pos:Pos = {row:0, col:0};
     return pos;
   }
-  dynamic function _create_style(tag, style) { return null; }
+  dynamic function _create_style(style_id) { return null; }
+  dynamic function _modify_style(style_id, key, value) { return null; }
   dynamic function _sel_index_get(row, col) {
     var start:Pos = {row:0, col:0};
     var end:Pos = {row:0, col:0};
@@ -194,6 +197,7 @@ class Hxrtflib {
 
   function style_no_selection(change_key, change_value, cursor) {
     if (is_word_extremity(cursor.row, cursor.col)) {
+      trace('is word extremity');
       style_word_extremity(change_key, change_value, cursor.row, cursor.col);
     }
     else {
@@ -305,9 +309,14 @@ class Hxrtflib {
   }
 
 
-  public function style_new(style) : StyleId {
+  public function style_new(style:Style) : StyleId {
     var style_id = style_id_make();
-    _create_style(style_id, style);
+    _create_style(style_id);
+    // Passing dict to targets doesn't map too cleanly, so...
+    for (change_type in style.keys()) {
+      var change_value = style.get(change_type);
+      _modify_style(style_id, change_type, change_value);
+    }
     styles[style_id] = style;
     return style_id;
   }
@@ -370,8 +379,8 @@ class Hxrtflib {
     // TODO how to test for out of bounds... -1?
     // Need to specify this behvaior also for _char_at_index
     // TODO indexs must become addable, +1/-1 for row and col
-    var char_next = _char_at_index(row, col+1);
-    if (char_next != ' ' && char_next != '\n') {
+    var char = _char_at_index(row, col);
+    if (char != ' ' && char != '\n') {
       return false;
     }
     return true;

@@ -1,0 +1,9 @@
+# Add directory to look for source files
+-cp hxrtflib
+
+# Add libraries
+-lib hxSet
+
+# These are the classes we wish to export
+hxrtflib.Hxrtflib
+-lua output/luahxrtflib/hxrtflib.lua

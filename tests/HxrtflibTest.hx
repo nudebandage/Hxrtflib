@@ -84,7 +84,10 @@ class Editor {
     return cursor;
   }
 
-  public dynamic function create_style(style_id, style) {
+  public dynamic function create_style(style_id) {
+  }
+
+  public dynamic function modify_style(style_id, key, value) {
   }
 
   public dynamic function sel_index_get(row, col) {
@@ -186,6 +189,7 @@ class HxrtflibTester extends haxe.unit.TestCase {
                editor.ignore_key,
                editor.insert_cursor_get,
                editor.create_style,
+               editor.modify_style,
                editor.sel_index_get);
   }
 }
@@ -275,7 +279,11 @@ class TestWordExtremity extends HxrtflibTester {
     editor.set_cell(row, col, "a");
     editor.set_cell(row, col+1, "b");
     editor.set_cell(row, col+2, "\n");
-    var result = core.is_word_extremity(row, col + 1);
+    var result = core.is_word_extremity(row, col);
+    assertEquals(true, result);
+    var result = core.is_word_extremity(row, col+1);
+    assertEquals(false, result);
+    var result = core.is_word_extremity(row, col+2);
     assertEquals(true, result);
   }
 
@@ -287,13 +295,16 @@ class TestWordExtremity extends HxrtflibTester {
     editor.set_cell(row, col+2, "b");
     editor.set_cell(row, col+3, "c");
     editor.set_cell(row, col+4, " ");
-    var result = core.is_word_extremity(row, col + 1);
+    var result = core.is_word_extremity(row, col+1);
     assertEquals(true, result);
 
-    var result = core.is_word_extremity(row, col + 2);
+    var result = core.is_word_extremity(row, col+2);
     assertEquals(false, result);
 
-    var result = core.is_word_extremity(row, col + 3);
+    var result = core.is_word_extremity(row, col+3);
+    assertEquals(false, result);
+
+    var result = core.is_word_extremity(row, col+4);
     assertEquals(true, result);
   }
 
@@ -338,13 +349,14 @@ class TestWordEnd extends HxrtflibTester {
     var col = Globals.START_COL;
     editor.set_cell(row, col, "a");
     editor.set_cell(row, col+1, "b");
-    editor.set_cell(row, col+2, "\n");
+    editor.set_cell(row, col+2, "c");
+    editor.set_cell(row, col+3, "\n");
 
     var result = core.word_end_get(row, col);
-    assertEquals(col+1, result);
+    assertEquals(col+3, result);
 
     var result = core.word_end_get(row, col+1);
-    assertEquals(col+1, result);
+    assertEquals(col+3, result);
   }
 
   public function test_middle() {
@@ -356,11 +368,11 @@ class TestWordEnd extends HxrtflibTester {
 
     var insert_col = col + 1;
     var result = core.word_end_get(row, insert_col);
-    assertEquals(col+word_length, result);
+    assertEquals(col+word_length+1, result);
 
     insert_col = col+word_length;
     var result = core.word_end_get(row, insert_col);
-    assertEquals(col+word_length, result);
+    assertEquals(col+word_length+1, result);
   }
 }
 
@@ -378,11 +390,11 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
 
     var change_key = "weight";
     var change_value = "bold";
-    var cursor_col = 2;
+    var cursor_col = col+word_length-1;
     editor.set_cursor(row, cursor_col);
-    core.style_change(change_key, change_value);
 
     // Bold the entire word
+    core.style_change(change_key, change_value);
     var new_tag = Util.unique_int([tag]);
     for (i in col...col+word_length) {
       var result = editor.tag_at_index(row, i);
@@ -415,7 +427,7 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     var change_key = "weight";
     var change_value = "bold";
     var start = col;
-    var end = col + word_length;
+    var end = col + word_length + 1;
 
     editor.set_cursor(row, start);
     core.style_change(change_key, change_value);
