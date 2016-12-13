@@ -198,8 +198,13 @@ class HxrtflibTester extends haxe.unit.TestCase {
 class TestWhenCursorAtStart extends HxrtflibTester {
   public function test_insert_blank_editor() {
     var row = Globals.START_ROW;
+    var col = Globals.START_COL;
     core.insert_when_cursor_at_start(row);
-    var result = editor.tag_at_index(row, Globals.START_COL);
+
+    var result = editor.tag_at_index(row, col);
+    assertEquals(Globals.DEFAULT_TAG, result);
+
+    var result = editor.tag_at_index(row, col+1);
     assertEquals(Globals.DEFAULT_TAG, result);
   }
 
@@ -208,7 +213,9 @@ class TestWhenCursorAtStart extends HxrtflibTester {
     var row = 2;
     var col = Globals.START_COL;
     var tag = 2;
+
     editor.set_cell(row - 1, col, "a", tag);
+
     core.insert_when_cursor_at_start(row);
     var result = editor.tag_at_index(row, Globals.START_COL);
     assertEquals(tag, result);
@@ -219,7 +226,8 @@ class TestWhenCursorAtStart extends HxrtflibTester {
     var row = 2;
     var col = Globals.START_COL;
     var tag = 2;
-    editor.set_cell(row, col + 1, "a", tag);
+
+    editor.set_cell(row, col, "a", tag);
     core.insert_when_cursor_at_start(row);
     var result = editor.tag_at_index(row, col);
     assertEquals(tag, result);
@@ -249,16 +257,12 @@ class TestInsertWhenSelected extends HxrtflibTester {
 class TestInsertChar extends HxrtflibTester {
   // public function test_ignored_chars() {
   // }
-  // public function test_insert_when_cursor_at_start() {
-  // }
-  // public function test_insert_when_selected() {
-  // }
   public function test_insert_normal() {
-    var row = Globals.DEFAULT_TAG;
+    var row = Globals.START_ROW;
     var tag = 2;
     var insert_col = 2;
     editor.set_cell(row, insert_col-1, tag);
-    core.insert_char("a", row, insert_col);
+    core.on_char_insert("a", row, insert_col);
     var result = editor.tag_at_index(row, insert_col);
     assertEquals(tag, result);
   }
@@ -494,7 +498,7 @@ class TestChangeStyleWithSelection extends HxrtflibTester {
 
 // These tests are a bit pointless, might have to refactor ignore_keys
 class TestOverride extends HxrtflibTester {
-  public function test_overide_used_on_insert() {
+  public function test_override_used_on_insert() {
     var tag = Globals.DEFAULT_TAG;
     var row = Globals.START_ROW;
     var col = Globals.START_COL;
@@ -505,7 +509,8 @@ class TestOverride extends HxrtflibTester {
     var change_value = "bold";
     editor.set_cursor(row, col);
     core.style_change(change_key, change_value);
-    core.insert_char('a', row, col+1);
+    // Override should have been applied
+    core.on_char_insert('a', row, col+1);
 
     var new_tag = Util.unique_int([tag]);
     var result = editor.tag_at_index(row, col+1);
@@ -523,7 +528,7 @@ class TestOverride extends HxrtflibTester {
     var change_value = "bold";
     editor.set_cursor(row, col);
     core.style_change(change_key, change_value);
-    core.insert_char('space', row, col+1);
+    core.on_char_insert('space', row, col+1);
 
     var result = editor.tag_at_index(row, col+1);
     assertEquals(-1, result);
@@ -540,7 +545,7 @@ class TestOverride extends HxrtflibTester {
     var change_value = "bold";
     editor.set_cursor(row, col);
     core.style_change(change_key, change_value);
-    core.mouse_clicked(row, col);
+    core.on_mouse_click(row, col);
 
     var result = core.override_style_get();
     assertEquals(-1, result);
@@ -587,7 +592,7 @@ class TestConsumer extends HxrtflibTester {
     core.register_consumer(test);
 
     editor.set_cell(row, col, "a", tag);
-    core.mouse_clicked(row, col);
+    core.on_mouse_click(row, col);
 
     // check the clear signal got sent
     assertEquals("reset", test_values.keys().next());

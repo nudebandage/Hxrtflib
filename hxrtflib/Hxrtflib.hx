@@ -38,12 +38,13 @@ class Globals {
   static public var DEFAULT_TAG : Int = 0;
   static public var START_ROW : Int = 1;
   static public var START_COL : Int = 0;
+  static public var NOTHING : Int = -1;
 }
 
 
 class Hxrtflib {
   static var styles : Map<StyleId, Style> = new Map();
-  var overide_style = -1;
+  var overide_style = Globals.NOTHING;
   static var consumers = new Array();
 
   public function new() {
@@ -98,7 +99,8 @@ class Hxrtflib {
     return sel;
   }
 
-  public function insert_char(event, row, col) {
+  // Adds a tag on insert, (the libraray must do the insert)
+  public function on_char_insert(event, row, col) {
     // event, will be passed to ignored_key, use this
     // to decide if a char needs to be inserted
     if (_ignore_key(event)) {
@@ -111,13 +113,18 @@ class Hxrtflib {
       insert_when_selected(row, col);
     }
     else {
-      var tag = _tag_at_index(row, col - 1);
-      tag_replace(tag, row, col);
+      var tag = _tag_at_index(row, col-1);
+      if (tag == Globals.NOTHING) {
+        insert_when_no_tag(row, col);
+      }
+      else {
+        tag_replace(tag, row, col);
+      }
     }
   }
 
 
-  public function mouse_clicked(row, col) {
+  public function on_mouse_click(row, col) {
     override_style_reset();
     consumer_run(row, col);
   }
@@ -125,26 +132,34 @@ class Hxrtflib {
 
   public function insert_when_cursor_at_start(row) {
     var tag : Int;
-    var char_at_right = _char_at_index(row, Globals.START_COL+1);
+    var col = Globals.START_COL;
+    var char_at_cur = _char_at_index(row, col);
     // Data exists after the cursor, so take that setting
-    if (char_at_right != "\n" && char_at_right != "") {
-      tag = _tag_at_index(row, Globals.START_COL + 1);
-    }
-    else if (row == Globals.START_ROW) {
-      var col = _last_col(row);
-      // Empty editor
-      if (col == Globals.START_COL) {
-        tag = Globals.DEFAULT_TAG;
-      }
-      else {
-        tag = _tag_at_index(row, _last_col(row));
-      }
+    if (char_at_cur != "\n" && char_at_cur != "") {
+      tag = _tag_at_index(row, col);
     }
     // Get tag from the previous line
     else {
-      tag = _tag_at_index(row - 1, _last_col(row));
+      tag = _tag_at_index(row - 1, _last_col(row - 1));
+    }
+
+    if (tag == Globals.NOTHING) {
+      insert_when_no_tag(row, col);
+      return;
     }
     tag_replace(tag, row, Globals.START_COL);
+  }
+
+  // Allows us to insert charachters to arbitrary positions
+  // And the tags will be applied properly
+  function insert_when_no_tag(row, col) {
+    var tag = Globals.DEFAULT_TAG;
+    // Apply default tag to the inserted char
+    tag_replace(tag, row, col);
+    // Apply default tag to the NEXT char
+    // This is important as amount of position a cursor can have
+    // is charachters + 1;
+    tag_replace(tag, row, col+1);
   }
 
 
@@ -156,7 +171,7 @@ class Hxrtflib {
 
 
   function tag_replace(tag:Int, row, col) {
-    if (overide_style == -1) {
+    if (overide_style == Globals.NOTHING) {
       _tag_add(tag, row, col);
     }
     // Use the overide tag
@@ -169,7 +184,7 @@ class Hxrtflib {
 
 
   function override_style_reset() {
-    overide_style = -1;
+    overide_style = Globals.NOTHING;
   }
 
 
@@ -197,7 +212,6 @@ class Hxrtflib {
 
   function style_no_selection(change_key, change_value, cursor) {
     if (is_word_extremity(cursor.row, cursor.col)) {
-      trace('is word extremity');
       style_word_extremity(change_key, change_value, cursor.row, cursor.col);
     }
     else {
@@ -292,7 +306,7 @@ class Hxrtflib {
     }
 
     // Check if the style already exists
-    var se = {exists:false, style_id:-1, style:new Style()};
+    var se = {exists:false, style_id:Globals.NOTHING, style:new Style()};
     se.exists = false;
     for (style_id in styles.keys()) {
       var style = styles.get(style_id);
