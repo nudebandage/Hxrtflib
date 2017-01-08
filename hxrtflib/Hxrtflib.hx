@@ -42,6 +42,7 @@ class Globals {
 }
 
 
+@:expose
 class Hxrtflib {
   static var styles : Map<StyleId, Style> = new Map();
   var overide_style = Globals.NOTHING;
