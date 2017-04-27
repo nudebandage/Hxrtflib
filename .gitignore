@@ -3,4 +3,5 @@ tests/.cache/
 *.n
 *.txt
 *.pyc
+output/
 
