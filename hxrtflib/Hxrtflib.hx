@@ -210,7 +210,6 @@ class Hxrtflib {
     consumer_run(cursor.row, cursor.col);
   }
 
-
   function style_no_selection(change_key, change_value, cursor) {
     if (is_word_extremity(cursor.row, cursor.col)) {
       style_word_extremity(change_key, change_value, cursor.row, cursor.col);
@@ -224,7 +223,7 @@ class Hxrtflib {
     }
   }
 
-
+  // Style a word when it is selected
   function style_with_selection(change_key, change_value, cursor) {
     var sel = _sel_index_get(cursor.row, cursor.col);
     style_word_range(change_key, change_value, sel.start, sel.end);
@@ -249,8 +248,9 @@ class Hxrtflib {
         _end_col = _last_col(r);
       }
       // + 1 because we have to include the end index
+      var override_style = override_style_get();
       for (c in _start_col..._end_col+1) {
-        var style_id = style_from_change(change_key, change_value, r, c);
+        var style_id = style_from_change(change_key, change_value, r, c, override_style);
         tag_replace(style_id, r,  c);
       }
     }
@@ -259,14 +259,16 @@ class Hxrtflib {
 
   function style_word_extremity(change_key, change_value, row, col) {
     // the next keypress should have a new style
-    var style_id = style_from_change(change_key, change_value, row, col);
+    // effect - settings the override style
+    var override_style = override_style_get();
+    var style_id = style_from_change(change_key, change_value, row, col, overide_style);
     override_style_set(style_id);
   }
 
 
-  function style_from_change(change_key, change_value, row, col) : StyleId {
+  function style_from_change(change_key, change_value, row, col, override_style) : StyleId {
     // given a requested change return the new/existing style
-    var se:StyleExists = style_exists(change_key, change_value, row, col);
+    var se:StyleExists = style_exists(change_key, change_value, row, col, overide_style);
     if (se.exists) {
       return se.style_id;
     }
@@ -276,25 +278,35 @@ class Hxrtflib {
   }
 
 
-  public function style_exists(change_key, change_value, row, col) : StyleExists {
+  public function style_exists(change_key, change_value, row, col, overide_style) : StyleExists {
     // Returns a style to be used or created
-    var style_id = _tag_at_index(row, col);
-    var style_at_index:Style = styles.get(style_id);
+
+    // The style we will add or remove our change from
+    var base_style_id;
+    if (overide_style != Globals.NOTHING) {
+      base_style_id = overide_style;
+    }
+    else {
+      base_style_id = _tag_at_index(row, col);
+    }
+
+    var base_style:Style = styles.get(base_style_id);
+    // Is the Change an Add or Remove?
     var remove:Bool;
-    if (style_at_index == null) {
+    if (base_style == null) {
       remove = false;
     }
-    else if (change_value == style_at_index.get(change_key)) {
+    else if (change_value == base_style.get(change_key)) {
       remove = true;
     }
     else {
       remove = false;
     }
 
-    // Copy the style at the index
+    // Make a copy of the base style
     var required_style = new Style();
-    for (key in style_at_index.keys()) {
-      var value = style_at_index.get(key);
+    for (key in base_style.keys()) {
+      var value = base_style.get(key);
       required_style.set(key, value);
     }
 

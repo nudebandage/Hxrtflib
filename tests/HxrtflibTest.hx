@@ -436,22 +436,32 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     editor.set_cursor(row, start);
     core.style_change(change_key, change_value);
     // make sure no style applied yet
-    var result = editor.tag_at_index(row, start);
-    assertEquals(tag, result);
+    var tag_at_index = editor.tag_at_index(row, start);
+    assertEquals(tag, tag_at_index);
     // make sure the override style was set
     var new_tag = Util.unique_int([tag]);
-    var result = core.override_style_get();
-    assertEquals(new_tag, result);
+    var override_style = core.override_style_get();
+    assertEquals(new_tag, override_style);
+    // Change Style Can be toggled off
+    core.style_change(change_key, change_value);
+    // make sure the override style was unset
+    var override_style = core.override_style_get();
+    assertEquals(tag, override_style);
 
     editor.set_cursor(row, end);
     core.style_change(change_key, change_value);
     // make sure no style applied yet
-    var result = editor.tag_at_index(row, end);
-    assertEquals(tag, result);
+    var tag_at_index = editor.tag_at_index(row, end);
+    assertEquals(tag, tag_at_index);
     // make sure the override style was set
     var new_tag = Util.unique_int([tag]);
-    var result = core.override_style_get();
-    assertEquals(new_tag, result);
+    var override_style = core.override_style_get();
+    assertEquals(new_tag, override_style);
+    // Change Style Can be toggled off
+    core.style_change(change_key, change_value);
+    // make sure the override style was unset
+    var override_style = core.override_style_get();
+    assertEquals(tag, override_style);
   }
 }
 
