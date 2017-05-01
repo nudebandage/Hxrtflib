@@ -137,24 +137,33 @@ class Hxrtflib {
 
 
   public function insert_when_cursor_at_start(row) {
-    var tag : Int;
     var col = Globals.START_COL;
     var char_at_cur = _char_at_index(row, col);
-    // Data exists after the cursor, so take that setting
-    if (char_at_cur != "\n" && char_at_cur != "") {
-      tag = _tag_at_index(row, col);
-    }
-    // Get tag from the previous line
-    else {
-      tag = _tag_at_index(row - 1, _last_col(row - 1));
-    }
+    var tag = _tag_at_index(row, col);
 
-    if (tag == Globals.NOTHING) {
-      insert_when_no_tag(row, col);
-      return;
-    }
-    tag_set(tag, row, Globals.START_COL);
+    if (char_at_cur == "\n"
+        || char_at_cur == "") {
+        if (row == Globals.START_ROW) {
+          // First insert into empty editor
+          if (tag == Globals.NOTHING) {
+            trace('insert when no tag');
+            insert_when_no_tag(row, col);
+            return;
+          }
+          // Existing tag at 1.0
+          tag_set(tag, row, Globals.START_COL);
+        }
+        // Get tag from the previous line
+        else {
+          trace('prev char');
+          tag = _tag_at_index(row - 1, _last_col(row - 1));
+          tag_set(tag, row, Globals.START_COL);
+        }
+      }
   }
+
+
+  // TODO look at how tags get read.. seems funky
 
   // Allows us to insert charachters to arbitrary positions
   // And the tags will be applied properly

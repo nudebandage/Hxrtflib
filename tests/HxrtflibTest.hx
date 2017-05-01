@@ -213,7 +213,12 @@ class TestWhenCursorAtStart extends HxrtflibTester {
     var result = editor.tag_at_index(row, col+1);
     assertEquals(Globals.DEFAULT_TAG, result);
 
-    // TODO: test that it only happens if a tag doesn't exist..
+    // test that it only happens if a tag doesn't exist
+    var tag = 1;
+    editor.set_cell(row, col, "b", tag);
+    core.insert_when_cursor_at_start(row);
+    var result = editor.tag_at_index(row, col);
+    assertEquals(tag, result);
   }
 
   public function test_second_row_when_nothing_at_right() {
@@ -455,7 +460,6 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     core.style_change(change_key, change_value);
      for (i in col...col+word_length) {
       var result = editor.tag_at_index(row, i);
-      trace("nice", i);
       assertEquals(tag, result);
     }
     // Make sure the tag is reused
