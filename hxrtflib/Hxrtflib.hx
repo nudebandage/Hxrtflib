@@ -48,7 +48,7 @@ class Globals {
 
 @:expose
 class Hxrtflib {
-  static var styles : Map<StyleId, Style> = new Map();
+  public var styles : Map<StyleId, Style> = new Map();
   var override_style = Globals.NOTHING;
   static var consumers = new Array();
 
@@ -220,32 +220,56 @@ class Hxrtflib {
   }
 
   function style_no_selection(change_key, change_value, cursor) {
-    // Set or resets the override style
+    var style_id;
+    // Style when cursor at extremity
     if (is_word_extremity(cursor.row, cursor.col)) {
-      style_word_extremity(change_key, change_value, cursor.row, cursor.col);
+      style_id = style_from_change(change_key, change_value, cursor.row, cursor.col);
+
+      // Set The override_style
+      if (override_style_get() == Globals.NOTHING) {
+        override_style_set(style_id);
+      }
+      // Reset the override_style
+      else {
+        override_style_reset();
+      }
+
     }
     // Style when cursor in middle of a word
     else {
+      // TODO delete this.. Any cursor move should invalidate the override_style - /rename override_style to extrimty_override
+      override_style_reset();
+
       var left = word_start_get(cursor.row, cursor.col);
       var right = word_end_get(cursor.row, cursor.col);
+      // FIXME this isn't true..
       var start:Pos = {row: cursor.row, col: left};
+      // FIXME this isn't true
       var end:Pos = {row: cursor.row, col: right};
-      style_word_range(change_key, change_value, start, end);
+      style_id = style_word_range(change_key, change_value, start, end);
     }
+
   }
 
   // Style a word when it is selected
   function style_with_selection(change_key, change_value, cursor) {
     var sel = _sel_index_get(cursor.row, cursor.col);
-    style_word_range(change_key, change_value, sel.start, sel.end);
+    style_word_range_sel(change_key, change_value, sel.start, sel.end);
   }
 
 
-  function style_word_range(change_key, change_value, start, end) {
-    // apply style to every char based on its index
+  function style_word_range(change_key, change_value, start, end) : StyleId {
+    // apply style to every char based on the style at cursor
     // + 1 because we have to include the end index
+    var style_id;
+    var cursor:Pos = _insert_cursor_get();
+    style_id = style_from_change(change_key, change_value,
+                                 cursor.row, cursor.col);
+
+    // TODO extract a metod to iterate positions
     var _start_col, _end_col;
     for (r in start.row...end.row+1) {
+      // Set the iteration indexes
       if (r == start.row) {
         _start_col = start.col;
       }
@@ -260,26 +284,38 @@ class Hxrtflib {
       }
       // + 1 because we have to include the end index
       for (c in _start_col..._end_col+1) {
-        var style_id = style_from_change(change_key, change_value, r, c);
         tag_set(style_id, r,  c);
       }
     }
+    return style_id;
   }
 
+  function style_word_range_sel(change_key, change_value, start, end) {
+    // apply style to every char based on the style at cursor
+    // + 1 because we have to include the end index
+    var style_id;
 
-  // Sets or clears the override style
-  function style_word_extremity(change_key, change_value, row, col) {
-    trace("\n\nstyling word extremity\n");
-    var style_id = style_from_change(change_key, change_value, row, col);
-    // Set The override_style
-    if (override_style_get() == Globals.NOTHING) {
-      trace("\n\nAdding override from extrimty\n");
-      override_style_set(style_id);
-    }
-    // Reset the override_style
-    else {
-      trace("\n\nressiting style inside Extremity\n");
-      override_style_reset();
+    // TODO extract a metod to iterate positions
+    var _start_col, _end_col;
+    for (r in start.row...end.row+1) {
+      // Set the iteration indexes
+      if (r == start.row) {
+        _start_col = start.col;
+      }
+      else {
+        _start_col = Globals.START_COL;
+      }
+      if (r == end.row) {
+        _end_col = end.col;
+      }
+      else {
+        _end_col = _last_col(r);
+      }
+      // + 1 because we have to include the end index
+      for (c in _start_col..._end_col+1) {
+        style_id = style_from_change(change_key, change_value, r, c);
+        tag_set(style_id, r,  c);
+      }
     }
   }
 
@@ -298,18 +334,18 @@ class Hxrtflib {
 
   public function style_exists(change_key, change_value, row, col) : StyleExists {
     // Detects weather a change will require a new style to be made
+    // FIXME implicitly relies on override_style
 
     // The style we will add or remove our change from
     var base_style_id;
-    // We need to revert back to using the previous chars style
     if (override_style_get() != Globals.NOTHING) {
-      base_style_id = _tag_at_index(row, col);
-    }
-    // Set the override style
-    else {
       base_style_id = override_style_get();
     }
+    else {
+      base_style_id = _tag_at_index(row, col);
+    }
 
+    // TODO ADD BASE STYLE TO THE FUCKING STYTLES
     var base_style:Style = styles.get(base_style_id);
     // remove or add the change to the position?
     var remove:Bool;
@@ -378,6 +414,7 @@ class Hxrtflib {
 
   public function word_start_get(row, col) {
     // row and col must be inside a word
+    // TODO go up rows...
     var i = col;
     while (true) {
       if (is_word_start(row, i)) {

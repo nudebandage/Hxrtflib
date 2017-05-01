@@ -194,6 +194,12 @@ class HxrtflibTester extends haxe.unit.TestCase {
   }
 }
 
+class TestRandom extends HxrtflibTester {
+  public function test_default_tag_is_added_to_map() {
+    assertEquals(core.styles.exists(Globals.DEFAULT_TAG), true);
+  }
+}
+
 
 class TestWhenCursorAtStart extends HxrtflibTester {
   public function test_insert_blank_editor() {
@@ -433,9 +439,14 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     var cursor_col = col+word_length-1;
     editor.set_cursor(row, cursor_col);
 
+    for (i in col...col+word_length) {
+      var result = editor.tag_at_index(row, i);
+      assertEquals(tag, result);
+    }
+
     // Bold the entire word
-    core.style_change(change_key, change_value);
     var new_tag = Util.unique_int([tag]);
+    core.style_change(change_key, change_value);
     for (i in col...col+word_length) {
       var result = editor.tag_at_index(row, i);
       assertEquals(new_tag, result);
@@ -444,6 +455,7 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     core.style_change(change_key, change_value);
      for (i in col...col+word_length) {
       var result = editor.tag_at_index(row, i);
+      trace("nice", i);
       assertEquals(tag, result);
     }
     // Make sure the tag is reused
@@ -669,17 +681,18 @@ class TestMapSame extends haxe.unit.TestCase {
 class HxrtflibTest {
   static function main(){
     var r = new haxe.unit.TestRunner();
-    // r.add(new TestWhenCursorAtStart());
-    // r.add(new TestInsertWhenSelected());
-    // r.add(new TestInsertChar());
-    // r.add(new TestWordExtremity());
-    // r.add(new TestWordStart());
-    // r.add(new TestWordEnd());
-    // r.add(new TestMapSame());
+    r.add(new TestRandom());
+    r.add(new TestWhenCursorAtStart());
+    r.add(new TestInsertWhenSelected());
+    r.add(new TestInsertChar());
+    r.add(new TestWordExtremity());
+    r.add(new TestWordStart());
+    r.add(new TestWordEnd());
+    r.add(new TestMapSame());
     r.add(new TestChangeStyleNoSelect());
-    // r.add(new TestChangeStyleWithSelection());
-    // r.add(new TestOverride());
-    // r.add(new TestConsumer());
+    r.add(new TestChangeStyleWithSelection());
+    r.add(new TestOverride());
+    r.add(new TestConsumer());
     r.run();
   }
 }
