@@ -49,7 +49,7 @@ class Globals {
 @:expose
 class Hxrtflib {
   static var styles : Map<StyleId, Style> = new Map();
-  var overide_style = Globals.NOTHING;
+  var override_style = Globals.NOTHING;
   static var consumers = new Array();
 
   public function new() {
@@ -178,10 +178,10 @@ class Hxrtflib {
 
   // set the tag, takes the override style into account
   function tag_set(tag:Int, row, col) {
-    if (overide_style == Globals.NOTHING) {
+    if (override_style_get() == Globals.NOTHING) {
       _tag_add(tag, row, col);
     }
-    // Use the overide tag
+    // Use the override tag
     else {
       tag  = override_style_get();
       _tag_add(tag, row, col);
@@ -191,17 +191,17 @@ class Hxrtflib {
 
 
   function override_style_reset() {
-    overide_style = Globals.NOTHING;
+    override_style = Globals.NOTHING;
   }
 
 
   function override_style_set(style) {
-    overide_style = style;
+    override_style = style;
   }
 
 
   public function override_style_get() {
-    return overide_style;
+    return override_style;
   }
 
 
@@ -220,7 +220,7 @@ class Hxrtflib {
   }
 
   function style_no_selection(change_key, change_value, cursor) {
-    // Set the override style
+    // Set or resets the override style
     if (is_word_extremity(cursor.row, cursor.col)) {
       style_word_extremity(change_key, change_value, cursor.row, cursor.col);
     }
@@ -259,7 +259,6 @@ class Hxrtflib {
         _end_col = _last_col(r);
       }
       // + 1 because we have to include the end index
-      var override_style = override_style_get();
       for (c in _start_col..._end_col+1) {
         var style_id = style_from_change(change_key, change_value, r, c);
         tag_set(style_id, r,  c);
@@ -268,19 +267,24 @@ class Hxrtflib {
   }
 
 
-  // Set or clear the override style
+  // Sets or clears the override style
   function style_word_extremity(change_key, change_value, row, col) {
+    trace("\n\nstyling word extremity\n");
     var style_id = style_from_change(change_key, change_value, row, col);
-    if (override_style == Globals.NOTHING) {
-      override_style_reset();
-    }
-    else {
+    // Set The override_style
+    if (override_style_get() == Globals.NOTHING) {
+      trace("\n\nAdding override from extrimty\n");
       override_style_set(style_id);
+    }
+    // Reset the override_style
+    else {
+      trace("\n\nressiting style inside Extremity\n");
+      override_style_reset();
     }
   }
 
 
-  function style_from_change(change_key, change_value, row, col, override_style) : StyleId {
+  function style_from_change(change_key, change_value, row, col) : StyleId {
     // given a requested change return the new/existing style
     var se:StyleExists = style_exists(change_key, change_value, row, col);
     if (se.exists) {
@@ -298,7 +302,7 @@ class Hxrtflib {
     // The style we will add or remove our change from
     var base_style_id;
     // We need to revert back to using the previous chars style
-    if (overide_style_get() != Globals.NOTHING) {
+    if (override_style_get() != Globals.NOTHING) {
       base_style_id = _tag_at_index(row, col);
     }
     // Set the override style

@@ -206,6 +206,8 @@ class TestWhenCursorAtStart extends HxrtflibTester {
 
     var result = editor.tag_at_index(row, col+1);
     assertEquals(Globals.DEFAULT_TAG, result);
+
+    // TODO: test that it only happens if a tag doesn't exist..
   }
 
   public function test_second_row_when_nothing_at_right() {
@@ -469,21 +471,24 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
 
     editor.set_cursor(row, start);
     core.style_change(change_key, change_value);
+
     // make sure no style applied yet
     var tag_at_index = editor.tag_at_index(row, start);
     assertEquals(tag, tag_at_index);
     // make sure the override style was set
-    var new_tag = Util.unique_int([tag]);
     var override_style = core.override_style_get();
-    assertEquals(new_tag, override_style);
+    assertEquals(Util.unique_int([tag]), override_style);
+
     // Change Style Can be toggled off
     core.style_change(change_key, change_value);
     // make sure the override style was unset
     var override_style = core.override_style_get();
-    assertEquals(tag, override_style);
+    assertEquals(Globals.NOTHING, override_style);
 
+    // Check end of the word
     editor.set_cursor(row, end);
     core.style_change(change_key, change_value);
+
     // make sure no style applied yet
     var tag_at_index = editor.tag_at_index(row, end);
     assertEquals(tag, tag_at_index);
@@ -491,11 +496,12 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     var new_tag = Util.unique_int([tag]);
     var override_style = core.override_style_get();
     assertEquals(new_tag, override_style);
+
     // Change Style Can be toggled off
     core.style_change(change_key, change_value);
     // make sure the override style was unset
     var override_style = core.override_style_get();
-    assertEquals(tag, override_style);
+    assertEquals(Globals.NOTHING, override_style);
   }
 }
 
@@ -663,17 +669,17 @@ class TestMapSame extends haxe.unit.TestCase {
 class HxrtflibTest {
   static function main(){
     var r = new haxe.unit.TestRunner();
-    r.add(new TestWhenCursorAtStart());
-    r.add(new TestInsertWhenSelected());
-    r.add(new TestInsertChar());
-    r.add(new TestWordExtremity());
-    r.add(new TestWordStart());
-    r.add(new TestWordEnd());
-    r.add(new TestMapSame());
+    // r.add(new TestWhenCursorAtStart());
+    // r.add(new TestInsertWhenSelected());
+    // r.add(new TestInsertChar());
+    // r.add(new TestWordExtremity());
+    // r.add(new TestWordStart());
+    // r.add(new TestWordEnd());
+    // r.add(new TestMapSame());
     r.add(new TestChangeStyleNoSelect());
-    r.add(new TestChangeStyleWithSelection());
-    r.add(new TestOverride());
-    r.add(new TestConsumer());
+    // r.add(new TestChangeStyleWithSelection());
+    // r.add(new TestOverride());
+    // r.add(new TestConsumer());
     r.run();
   }
 }
