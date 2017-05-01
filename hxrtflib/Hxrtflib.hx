@@ -3,6 +3,10 @@
 
 // The tag is an id which represents a style
 
+// override_style is state used to determine if the next char
+// being inserted should take the last chars style (default)
+// or use some other style.
+
 package hxrtflib;
 
 import hxrtflib.Util;
@@ -119,7 +123,8 @@ class Hxrtflib {
         insert_when_no_tag(row, col);
       }
       else {
-        tag_replace(tag, row, col);
+        // Takes the override style into account
+        tag_set(tag, row, col);
       }
     }
   }
@@ -148,7 +153,7 @@ class Hxrtflib {
       insert_when_no_tag(row, col);
       return;
     }
-    tag_replace(tag, row, Globals.START_COL);
+    tag_set(tag, row, Globals.START_COL);
   }
 
   // Allows us to insert charachters to arbitrary positions
@@ -156,22 +161,23 @@ class Hxrtflib {
   function insert_when_no_tag(row, col) {
     var tag = Globals.DEFAULT_TAG;
     // Apply default tag to the inserted char
-    tag_replace(tag, row, col);
+    tag_set(tag, row, col);
     // Apply default tag to the NEXT char
     // This is important as amount of position a cursor can have
     // is charachters + 1;
-    tag_replace(tag, row, col+1);
+    tag_set(tag, row, col+1);
   }
 
 
   public function insert_when_selected(row:Int, col:Int) {
     var sel_pos:Pos = _first_selected_index(row, col);
     var tag = _tag_at_index(sel_pos.row, sel_pos.col);
-    tag_replace(tag, sel_pos.row, sel_pos.col);
+    tag_set(tag, sel_pos.row, sel_pos.col);
   }
 
 
-  function tag_replace(tag:Int, row, col) {
+  // set the tag, takes the override style into account
+  function tag_set(tag:Int, row, col) {
     if (overide_style == Globals.NOTHING) {
       _tag_add(tag, row, col);
     }
@@ -199,11 +205,14 @@ class Hxrtflib {
   }
 
 
+  // Apply a Style change to the current curosor position
   public function style_change(change_key, change_value) {
     var cursor:Pos = _insert_cursor_get();
+    // Do some selection
     if (_is_selected(cursor.row, cursor.col)) {
       style_with_selection(change_key, change_value, cursor);
     }
+    // Either apply style or set the override style
     else {
       style_no_selection(change_key, change_value, cursor);
     }
@@ -211,9 +220,11 @@ class Hxrtflib {
   }
 
   function style_no_selection(change_key, change_value, cursor) {
+    // Set the override style
     if (is_word_extremity(cursor.row, cursor.col)) {
       style_word_extremity(change_key, change_value, cursor.row, cursor.col);
     }
+    // Style when cursor in middle of a word
     else {
       var left = word_start_get(cursor.row, cursor.col);
       var right = word_end_get(cursor.row, cursor.col);
@@ -250,25 +261,28 @@ class Hxrtflib {
       // + 1 because we have to include the end index
       var override_style = override_style_get();
       for (c in _start_col..._end_col+1) {
-        var style_id = style_from_change(change_key, change_value, r, c, override_style);
-        tag_replace(style_id, r,  c);
+        var style_id = style_from_change(change_key, change_value, r, c);
+        tag_set(style_id, r,  c);
       }
     }
   }
 
 
+  // Set or clear the override style
   function style_word_extremity(change_key, change_value, row, col) {
-    // the next keypress should have a new style
-    // effect - settings the override style
-    var override_style = override_style_get();
-    var style_id = style_from_change(change_key, change_value, row, col, overide_style);
-    override_style_set(style_id);
+    var style_id = style_from_change(change_key, change_value, row, col);
+    if (override_style == Globals.NOTHING) {
+      override_style_reset();
+    }
+    else {
+      override_style_set(style_id);
+    }
   }
 
 
   function style_from_change(change_key, change_value, row, col, override_style) : StyleId {
     // given a requested change return the new/existing style
-    var se:StyleExists = style_exists(change_key, change_value, row, col, overide_style);
+    var se:StyleExists = style_exists(change_key, change_value, row, col);
     if (se.exists) {
       return se.style_id;
     }
@@ -278,20 +292,22 @@ class Hxrtflib {
   }
 
 
-  public function style_exists(change_key, change_value, row, col, overide_style) : StyleExists {
-    // Returns a style to be used or created
+  public function style_exists(change_key, change_value, row, col) : StyleExists {
+    // Detects weather a change will require a new style to be made
 
     // The style we will add or remove our change from
     var base_style_id;
-    if (overide_style != Globals.NOTHING) {
-      base_style_id = overide_style;
-    }
-    else {
+    // We need to revert back to using the previous chars style
+    if (overide_style_get() != Globals.NOTHING) {
       base_style_id = _tag_at_index(row, col);
+    }
+    // Set the override style
+    else {
+      base_style_id = override_style_get();
     }
 
     var base_style:Style = styles.get(base_style_id);
-    // Is the Change an Add or Remove?
+    // remove or add the change to the position?
     var remove:Bool;
     if (base_style == null) {
       remove = false;
@@ -303,11 +319,13 @@ class Hxrtflib {
       remove = false;
     }
 
-    // Make a copy of the base style
     var required_style = new Style();
-    for (key in base_style.keys()) {
-      var value = base_style.get(key);
-      required_style.set(key, value);
+    // Make a copy of the base style
+    if (base_style != null) {
+      for (key in base_style.keys()) {
+        var value = base_style.get(key);
+        required_style.set(key, value);
+      }
     }
 
     // Build the required style

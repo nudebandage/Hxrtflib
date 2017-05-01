@@ -266,6 +266,40 @@ class TestInsertChar extends HxrtflibTester {
     var result = editor.tag_at_index(row, insert_col);
     assertEquals(tag, result);
   }
+
+  public function test_override_style_applied() {
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+
+    var tag = Globals.DEFAULT_TAG;
+    var word_length = 3;
+
+    editor.set_cell_range(row, col, word_length, "a", tag);
+    editor.set_cell(row, col+word_length+1, " ", tag);
+
+    var change_key = "weight";
+    var change_value = "bold";
+    var insert_col = col+word_length + 1;
+    editor.set_cursor(row, insert_col);
+
+    // Override style is applied on char insert
+    core.style_change(change_key, change_value);
+    var override_style = core.override_style_get();
+    core.on_char_insert("b", row, insert_col);
+    var result = editor.tag_at_index(row, insert_col);
+    assertEquals(override_style, result);
+
+    // Override style is removed on second char insert
+    var insert_col2 = insert_col + 1;
+    editor.set_cursor(row, insert_col2);
+
+    core.style_change(change_key, change_value);
+    // var override_style = core.override_style_get();
+    // assertEquals(override_style, Globals.NOTHING);
+    // core.on_char_insert("c", row, insert_col2);
+    // var result = editor.tag_at_index(row, insert_col2);
+    // assertEquals(tag, result);
+  }
 }
 
 
