@@ -404,27 +404,27 @@ class TestWordEnd extends HxrtflibTester {
     editor.set_cell(row, col+3, "\n");
 
     var result = core.word_end_get(row, col);
-    assertEquals(col+3-1, result);
+    assertEquals(col+3, result);
 
     var result = core.word_end_get(row, col+1);
-    assertEquals(col+3-1, result);
+    assertEquals(col+3, result);
   }
 
-  // public function test_middle() {
-    // var row = Globals.START_ROW;
-    // var col = Globals.START_COL;
-    // var word_length = 3;
-    // editor.set_cell_range(row, col, word_length, "a");
-    // editor.set_cell(row, col+word_length+1, " ");
+  public function test_middle() {
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+    var word_length = 3;
+    editor.set_cell_range(row, col, word_length, "a");
+    editor.set_cell(row, col+word_length+1, " ");
 
-    // var insert_col = col + 1;
-    // var result = core.word_end_get(row, insert_col);
-    // assertEquals(col+word_length+1, result);
+    var insert_col = col + 1;
+    var result = core.word_end_get(row, insert_col);
+    assertEquals(col+word_length+1, result);
 
-    // insert_col = col+word_length;
-    // var result = core.word_end_get(row, insert_col);
-    // assertEquals(col+word_length+1, result);
-  // }
+    insert_col = col+word_length;
+    var result = core.word_end_get(row, insert_col);
+    assertEquals(col+word_length+1, result);
+  }
 }
 
 
@@ -685,18 +685,18 @@ class TestMapSame extends haxe.unit.TestCase {
 class HxrtflibTest {
   static function main(){
     var r = new haxe.unit.TestRunner();
-    // r.add(new TestRandom());
-    // r.add(new TestWhenCursorAtStart());
-    // r.add(new TestInsertWhenSelected());
-    // r.add(new TestInsertChar());
-    // r.add(new TestWordExtremity());
-    // r.add(new TestWordStart());
+    r.add(new TestRandom());
+    r.add(new TestWhenCursorAtStart());
+    r.add(new TestInsertWhenSelected());
+    r.add(new TestInsertChar());
+    r.add(new TestWordExtremity());
+    r.add(new TestWordStart());
     r.add(new TestWordEnd());
-    // r.add(new TestMapSame());
-    // r.add(new TestChangeStyleNoSelect());
-    // r.add(new TestChangeStyleWithSelection());
-    // r.add(new TestOverride());
-    // r.add(new TestConsumer());
+    r.add(new TestMapSame());
+    r.add(new TestChangeStyleNoSelect());
+    r.add(new TestChangeStyleWithSelection());
+    r.add(new TestOverride());
+    r.add(new TestConsumer());
     r.run();
   }
 }

@@ -12,6 +12,7 @@
 // cursor positions and pass them around the program.
 // Word "abc" can be detcted when the cursor is at 1.0 and 1.4,
 // but to read the tags or chars you need to use 1.0 to 1.3
+// So we use _index, to refer to the "cursor" and _T_index to automaticlaly handle this conversion for us
 
 package hxrtflib;
 
@@ -127,6 +128,17 @@ class Hxrtflib {
     return tag;
   }
 
+  function _tag_at_T_index(row, col) {
+    var tag;
+    if (col != Globals.START_COL) {
+      tag = __tag_at_index(row, col-1);
+    }
+    else {
+      tag = __tag_at_index(row, col);
+    }
+    return tag;
+  }
+
   // Adds a tag on insert, (the libraray must do the insert)
   public function on_char_insert(event, row, col) {
     // event, will be passed to ignored_key, use this
@@ -148,8 +160,7 @@ class Hxrtflib {
       insert_when_selected(row, col);
     }
     else {
-      // See module doc about the -1
-      var tag = _tag_at_index(row, col-1);
+      var tag = _tag_at_T_index(row, col);
       // FIXME THIS STATE HSOULD NEVER BE REACHED.. - should be sset in  inset when cursor at start
       if (tag == Globals.NOTHING) {
         insert_when_no_tag(row, col);
@@ -385,8 +396,7 @@ class Hxrtflib {
       base_style_id = override_style_get();
     }
     else {
-      // See module doc about the -1
-      base_style_id = _tag_at_index(row, col-1);
+      base_style_id = _tag_at_T_index(row, col);
       Assert.assert(base_style_id != Globals.NOTHING);
     }
 
