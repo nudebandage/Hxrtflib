@@ -7,9 +7,16 @@
 // being inserted should take the last chars style (default)
 // or use some other style.
 
+// Note:
+// A word with 3 letters has 4 cursor positions. We consider
+// cursor positions and pass them around the program.
+// Word "abc" can be detcted when the cursor is at 1.0 and 1.4,
+// but to read the tags or chars you need to use 1.0 to 1.3
+
 package hxrtflib;
 
 import hxrtflib.Util;
+import hxrtflib.Assert;
 
 
 typedef Pos = {
@@ -71,7 +78,7 @@ class Hxrtflib {
     _is_selected = is_selected;
     _first_selected_index = first_selected_index;
     _char_at_index = char_at_index;
-    _tag_at_index = tag_at_index;
+    __tag_at_index = tag_at_index;
     _tag_add = tag_add;
     _last_col = last_col;
     _ignore_key = ignore_key;
@@ -87,7 +94,7 @@ class Hxrtflib {
     return pos;
   }
   dynamic function _char_at_index(row, col) { return ""; }
-  dynamic function _tag_at_index(row, col) { return 0; }
+  dynamic function __tag_at_index(row, col) { return 0; }
   dynamic function _tag_add(tag, row, col) { return null; }
   dynamic function _last_col(row) { return 0; }
   dynamic function _ignore_key(event) { return false; }
@@ -104,11 +111,34 @@ class Hxrtflib {
     return sel;
   }
 
+  // if a text editor has 5 chars -> 12345
+  // There are 6 possiblle cursor locations
+  // The last position has no tag, so we read
+  // from the previous one..
+  function _tag_at_index(row, col) {
+    var tag = __tag_at_index(row, col);
+    if (tag == Globals.NOTHING) {
+      // TODO read from previous row
+      if (col != Globals.START_COL) {
+        tag = __tag_at_index(row, col -1);
+      }
+      // Assert.assert(tag != Globals.NOTHING);
+    }
+    return tag;
+  }
+
   // Adds a tag on insert, (the libraray must do the insert)
   public function on_char_insert(event, row, col) {
     // event, will be passed to ignored_key, use this
     // to decide if a char needs to be inserted
     if (_ignore_key(event)) {
+      return;
+    }
+
+    var override_style = override_style_get();
+    if (override_style != Globals.NOTHING) {
+      tag_set_override(override_style, row, col);
+      override_style_reset();
       return;
     }
     else if (col == Globals.START_COL) {
@@ -118,12 +148,13 @@ class Hxrtflib {
       insert_when_selected(row, col);
     }
     else {
+      // See module doc about the -1
       var tag = _tag_at_index(row, col-1);
+      // FIXME THIS STATE HSOULD NEVER BE REACHED.. - should be sset in  inset when cursor at start
       if (tag == Globals.NOTHING) {
         insert_when_no_tag(row, col);
       }
       else {
-        // Takes the override style into account
         tag_set(tag, row, col);
       }
     }
@@ -146,7 +177,6 @@ class Hxrtflib {
         if (row == Globals.START_ROW) {
           // First insert into empty editor
           if (tag == Globals.NOTHING) {
-            trace('insert when no tag');
             insert_when_no_tag(row, col);
             return;
           }
@@ -155,7 +185,6 @@ class Hxrtflib {
         }
         // Get tag from the previous line
         else {
-          trace('prev char');
           tag = _tag_at_index(row - 1, _last_col(row - 1));
           tag_set(tag, row, Globals.START_COL);
         }
@@ -185,17 +214,21 @@ class Hxrtflib {
   }
 
 
-  // set the tag, takes the override style into account
-  function tag_set(tag:Int, row, col) {
+  function tag_set_override(tag:Int, row, col) {
     if (override_style_get() == Globals.NOTHING) {
       _tag_add(tag, row, col);
     }
     // Use the override tag
     else {
-      tag  = override_style_get();
-      _tag_add(tag, row, col);
+      _tag_add(override_style_get(), row, col);
       override_style_reset();
     }
+  }
+
+  // set the tag
+  function tag_set(tag:Int, row, col) {
+    Assert.assert(override_style_get() == Globals.NOTHING);
+    _tag_add(tag, row, col);
   }
 
 
@@ -217,8 +250,9 @@ class Hxrtflib {
   // Apply a Style change to the current curosor position
   public function style_change(change_key, change_value) {
     var cursor:Pos = _insert_cursor_get();
-    // Do some selection
+    // Style some selection
     if (_is_selected(cursor.row, cursor.col)) {
+      Assert.assert(override_style_get() == Globals.NOTHING);
       style_with_selection(change_key, change_value, cursor);
     }
     // Either apply style or set the override style
@@ -255,7 +289,7 @@ class Hxrtflib {
       var start:Pos = {row: cursor.row, col: left};
       // FIXME this isn't true
       var end:Pos = {row: cursor.row, col: right};
-      style_id = style_word_range(change_key, change_value, start, end);
+      style_word_range(change_key, change_value, start, end);
     }
 
   }
@@ -351,12 +385,16 @@ class Hxrtflib {
       base_style_id = override_style_get();
     }
     else {
-      base_style_id = _tag_at_index(row, col);
+      // See module doc about the -1
+      base_style_id = _tag_at_index(row, col-1);
+      Assert.assert(base_style_id != Globals.NOTHING);
     }
 
+    Assert.assert(styles.exists(base_style_id));
     var base_style:Style = styles.get(base_style_id);
     // remove or add the change to the position?
     var remove:Bool;
+    // The map is empty
     if (base_style == null) {
       remove = false;
     }
@@ -420,6 +458,8 @@ class Hxrtflib {
   }
 
 
+  // Test if the cursor position encompasses a word
+  // see module doc for more info
   public function word_start_get(row, col) {
     // row and col must be inside a word
     // TODO go up rows...
@@ -433,6 +473,8 @@ class Hxrtflib {
   }
 
 
+  // Test if the cursor position encompasses a word
+  // see module doc for more info
   public function word_end_get(row, col) {
     // row and col must be inside a word
     var i = col;
@@ -456,6 +498,8 @@ class Hxrtflib {
   }
 
 
+  // Test if the cursor position encompasses a word
+  // see module doc for more info
   function is_word_start(row, col) {
     if (col == Globals.START_COL) {
       return true;
@@ -469,6 +513,8 @@ class Hxrtflib {
   }
 
 
+  // Test if the cursor position encompasses a word
+  // see module doc for more info
   function is_word_end(row, col) {
     // TODO how to test for out of bounds... -1?
     // Need to specify this behvaior also for _char_at_index
