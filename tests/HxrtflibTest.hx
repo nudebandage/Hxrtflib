@@ -211,7 +211,7 @@ class TestWhenCursorAtStart extends HxrtflibTester {
     assertEquals(Globals.DEFAULT_TAG, result);
 
     var result = editor.tag_at_index(row, col+1);
-    assertEquals(Globals.DEFAULT_TAG, result);
+    assertEquals(Globals.NOTHING, result);
 
     // test that it only happens if a tag doesn't exist
     var tag = 1;

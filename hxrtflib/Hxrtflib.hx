@@ -123,7 +123,6 @@ class Hxrtflib {
       if (col != Globals.START_COL) {
         tag = __tag_at_index(row, col -1);
       }
-      // Assert.assert(tag != Globals.NOTHING);
     }
     return tag;
   }
@@ -214,7 +213,7 @@ class Hxrtflib {
     // Apply default tag to the NEXT char
     // This is important as amount of position a cursor can have
     // is charachters + 1;
-    tag_set(tag, row, col+1);
+    // tag_set(tag, row, col+1);
   }
 
 
