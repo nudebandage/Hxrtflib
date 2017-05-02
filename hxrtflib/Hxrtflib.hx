@@ -354,7 +354,6 @@ class Hxrtflib {
       base_style_id = _tag_at_index(row, col);
     }
 
-    // TODO ADD BASE STYLE TO THE FUCKING STYTLES
     var base_style:Style = styles.get(base_style_id);
     // remove or add the change to the position?
     var remove:Bool;

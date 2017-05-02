@@ -307,11 +307,11 @@ class TestInsertChar extends HxrtflibTester {
     editor.set_cursor(row, insert_col2);
 
     core.style_change(change_key, change_value);
-    // var override_style = core.override_style_get();
-    // assertEquals(override_style, Globals.NOTHING);
-    // core.on_char_insert("c", row, insert_col2);
-    // var result = editor.tag_at_index(row, insert_col2);
-    // assertEquals(tag, result);
+    var override_style = core.override_style_get();
+    assertEquals(override_style, Globals.NOTHING);
+    core.on_char_insert("c", row, insert_col2);
+    var result = editor.tag_at_index(row, insert_col2);
+    assertEquals(tag, result);
   }
 }
 
@@ -685,18 +685,18 @@ class TestMapSame extends haxe.unit.TestCase {
 class HxrtflibTest {
   static function main(){
     var r = new haxe.unit.TestRunner();
-    r.add(new TestRandom());
-    r.add(new TestWhenCursorAtStart());
-    r.add(new TestInsertWhenSelected());
+    // r.add(new TestRandom());
+    // r.add(new TestWhenCursorAtStart());
+    // r.add(new TestInsertWhenSelected());
     r.add(new TestInsertChar());
-    r.add(new TestWordExtremity());
-    r.add(new TestWordStart());
-    r.add(new TestWordEnd());
-    r.add(new TestMapSame());
-    r.add(new TestChangeStyleNoSelect());
-    r.add(new TestChangeStyleWithSelection());
-    r.add(new TestOverride());
-    r.add(new TestConsumer());
+    // r.add(new TestWordExtremity());
+    // r.add(new TestWordStart());
+    // r.add(new TestWordEnd());
+    // r.add(new TestMapSame());
+    // r.add(new TestChangeStyleNoSelect());
+    // r.add(new TestChangeStyleWithSelection());
+    // r.add(new TestOverride());
+    // r.add(new TestConsumer());
     r.run();
   }
 }
