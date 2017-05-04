@@ -624,6 +624,8 @@ class TestConsumer extends HxrtflibTester {
     var tag = Globals.DEFAULT_TAG;
     var row = Globals.START_ROW;
     var col = Globals.START_COL;
+    var change_key = "weight";
+    var change_value = "bold";
 
     var test_values = new Array();
     var test = function(k, v) {
@@ -631,14 +633,12 @@ class TestConsumer extends HxrtflibTester {
     }
     core.register_consumer(test);
 
-    // Insert a bold word, the space at the end is not bolded
+    // Insert some chars
     var word_length = 3;
     editor.set_cell_range(row, col, word_length, "a", tag);
     editor.set_cell(row, col+word_length + 1, " ", tag);
     var cursor_col = col + word_length - 1;
     editor.set_cursor(row, cursor_col);
-    var change_key = "weight";
-    var change_value = "bold";
 
     // Test it bolds
     core.style_change(change_key, change_value);
@@ -652,7 +652,40 @@ class TestConsumer extends HxrtflibTester {
     core.style_change(change_key, change_value);
     assertEquals("reset", test_values.pop().k);
     assertEquals(null, test_values.pop());
+  }
 
+  public function test_end_of_word() {
+    var tag = Globals.DEFAULT_TAG;
+    var row = Globals.START_ROW;
+    var col = Globals.START_COL;
+    var change_key = "weight";
+    var change_value = "bold";
+
+    var test_values = new Array();
+    var test = function(k, v) {
+      test_values.insert(0, {k: k, v:v});
+    }
+    core.register_consumer(test);
+
+    // Insert some chars
+    var word_length = 3;
+    editor.set_cell_range(row, col, word_length, "a", tag);
+    editor.set_cell(row, col+word_length + 1, " ", tag);
+    var cursor_col = col + word_length;
+    editor.set_cursor(row, cursor_col);
+
+    // Test it bolds
+    core.style_change(change_key, change_value);
+    assertEquals("reset", test_values.pop().k);
+    var change = test_values.pop();
+    assertEquals(change_key, change.k);
+    assertEquals(change_value, change.v);
+    assertEquals(null, test_values.pop());
+
+    // Test it unbolds
+    core.style_change(change_key, change_value);
+    assertEquals("reset", test_values.pop().k);
+    assertEquals(null, test_values.pop());
   }
 
   public function test_mouse_triggers_consumer() {

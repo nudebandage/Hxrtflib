@@ -336,8 +336,7 @@ class Hxrtflib {
       else {
         _end_col = _last_col(r);
       }
-      // + 1 because we have to include the end index
-      for (c in _start_col..._end_col+1) {
+      for (c in _start_col..._end_col) {
         tag_set(style_id, r,  c);
       }
     }
@@ -365,8 +364,7 @@ class Hxrtflib {
       else {
         _end_col = _last_col(r);
       }
-      // + 1 because we have to include the end index
-      for (c in _start_col..._end_col+1) {
+      for (c in _start_col..._end_col) {
         style_id = style_from_change(change_key, change_value, r, c);
         tag_set(style_id, r,  c);
       }
@@ -541,6 +539,7 @@ class Hxrtflib {
   // This is used so clients can update UI widgets when styles change
   // the string "reset" is sent before each change, Toggleable buttons should be set to "off" and non toggelable options left alone
   // The consumer function must have signature (key, value)
+  // TODO - just make this a dynamic function?
   public function register_consumer(func) {
     consumers.push(func);
   }
