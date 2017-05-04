@@ -55,6 +55,10 @@ class Editor {
   }
 
   public dynamic function char_at_index(row, col) : String {
+    var cell = cell_at_index(row, col);
+    if (cell == null) {
+      return Globals.EOF;
+    }
     return cell_at_index(row,col).text;
   }
 
@@ -620,6 +624,17 @@ class TestOverride extends HxrtflibTester {
 
 
 class TestConsumer extends HxrtflibTester {
+  public var test_values = new Array();
+
+  function consumer(screen_updates) {
+    test_values = new Array();
+    function event_handler(k, v) {
+      test_values.insert(0, k);
+      test_values.insert(0, v);
+    }
+    screen_updates(event_handler);
+  }
+
   public function test_middle_of_word() {
     var tag = Globals.DEFAULT_TAG;
     var row = Globals.START_ROW;
@@ -627,11 +642,7 @@ class TestConsumer extends HxrtflibTester {
     var change_key = "weight";
     var change_value = "bold";
 
-    var test_values = new Array();
-    var test = function(k, v) {
-      test_values.insert(0, {k: k, v:v});
-    }
-    core.register_consumer(test);
+    core.register_consumer(consumer);
 
     // Insert some chars
     var word_length = 3;
@@ -642,15 +653,16 @@ class TestConsumer extends HxrtflibTester {
 
     // Test it bolds
     core.style_change(change_key, change_value);
-    assertEquals("reset", test_values.pop().k);
-    var change = test_values.pop();
-    assertEquals(change_key, change.k);
-    assertEquals(change_value, change.v);
+    assertEquals("reset", test_values.pop());
+    test_values.pop();
+    assertEquals(change_key, test_values.pop());
+    assertEquals(change_value, test_values.pop());
     assertEquals(null, test_values.pop());
 
     // Test it unbolds
     core.style_change(change_key, change_value);
-    assertEquals("reset", test_values.pop().k);
+    assertEquals("reset", test_values.pop());
+    test_values.pop();
     assertEquals(null, test_values.pop());
   }
 
@@ -661,30 +673,27 @@ class TestConsumer extends HxrtflibTester {
     var change_key = "weight";
     var change_value = "bold";
 
-    var test_values = new Array();
-    var test = function(k, v) {
-      test_values.insert(0, {k: k, v:v});
-    }
-    core.register_consumer(test);
+    core.register_consumer(consumer);
 
     // Insert some chars
     var word_length = 3;
     editor.set_cell_range(row, col, word_length, "a", tag);
-    editor.set_cell(row, col+word_length + 1, " ", tag);
+    // editor.set_cell(row, col+word_length + 1, " ", tag);
     var cursor_col = col + word_length;
     editor.set_cursor(row, cursor_col);
 
     // Test it bolds
     core.style_change(change_key, change_value);
-    assertEquals("reset", test_values.pop().k);
-    var change = test_values.pop();
-    assertEquals(change_key, change.k);
-    assertEquals(change_value, change.v);
+    assertEquals("reset", test_values.pop());
+    test_values.pop();
+    assertEquals(change_key, test_values.pop());
+    assertEquals(change_value, test_values.pop());
     assertEquals(null, test_values.pop());
 
     // Test it unbolds
     core.style_change(change_key, change_value);
-    assertEquals("reset", test_values.pop().k);
+    assertEquals("reset", test_values.pop());
+    test_values.pop();
     assertEquals(null, test_values.pop());
   }
 
@@ -693,17 +702,13 @@ class TestConsumer extends HxrtflibTester {
     var row = Globals.START_ROW;
     var col = Globals.START_COL;
 
-    var test_values = new Map();
-    var test = function(a, b) {
-      test_values.set(a, b);
-    }
-    core.register_consumer(test);
+    core.register_consumer(consumer);
 
     editor.set_cell(row, col, "a", tag);
     core.on_mouse_click(row, col);
 
     // check the clear signal got sent
-    assertEquals("reset", test_values.keys().next());
+    assertEquals("reset", test_values.pop());
   }
 }
 

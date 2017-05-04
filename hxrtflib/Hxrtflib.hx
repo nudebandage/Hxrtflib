@@ -51,6 +51,7 @@ class Globals {
   static public var START_ROW : Int = 1;
   static public var START_COL : Int = 0;
   static public var NOTHING : Int = -1;
+  static public var EOF = null; // FIXME, Breaks static languages - https://haxe.org/manual/types-nullability.html
 }
 
 
@@ -171,7 +172,7 @@ class Hxrtflib {
   }
 
 
-  // Note, row and col must be of the final position, care of event loop
+  // NOTE, row and col must be of the final position, care of event loop
   public function on_mouse_click(row, col) {
     override_style_reset();
     consumer_run(row, col);
@@ -270,6 +271,7 @@ class Hxrtflib {
     else {
       style_no_selection(change_key, change_value, cursor);
     }
+    // NOTE requires to be run in ev because new tag isn't applied
     consumer_run(cursor.row, cursor.col);
   }
 
@@ -524,35 +526,37 @@ class Hxrtflib {
   // Test if the cursor position encompasses a word
   // see module doc for more info
   function is_word_end(row, col) {
-    // TODO how to test for out of bounds... -1?
     // Need to specify this behvaior also for _char_at_index
     // TODO indexs must become addable, +1/-1 for row and col
     var char = _char_at_index(row, col);
-    if (char != ' ' && char != '\n') {
+    if (char != ' ' && char != '\n' && char != Globals.EOF) {
       return false;
     }
     return true;
   }
 
 
-  // Register a function to recieve notifications
-  // This is used so clients can update UI widgets when styles change
-  // the string "reset" is sent before each change, Toggleable buttons should be set to "off" and non toggelable options left alone
-  // The consumer function must have signature (key, value)
   // TODO - just make this a dynamic function?
   public function register_consumer(func) {
     consumers.push(func);
   }
 
+  // the consumer func will be passed an "apply_screen_update"
+  // function, this function takes a param type function called event_handler
+  // The event_handler needs to accept key,value pairs and handle resets
   public function consumer_run(row, col) {
-    var style_id = _tag_at_index(row, col);
-    var style = styles.get(style_id);
-    for (func in consumers) {
-      func("reset", "");
+    function _apply_screen_updates(event_handler) {
+      event_handler("reset", "");
+      var style_id = _tag_at_index(row, col);
+      var style = styles.get(style_id);
       for (style_type in style.keys()) {
         var value = style.get(style_type);
-        func(style_type, value);
+        event_handler(style_type, value);
       }
     }
+    for (updater in consumers) {
+      updater(_apply_screen_updates);
+    }
   }
+
 }
