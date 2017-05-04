@@ -620,14 +620,14 @@ class TestOverride extends HxrtflibTester {
 
 
 class TestConsumer extends HxrtflibTester {
-  public function test_add() {
+  public function test_middle_of_word() {
     var tag = Globals.DEFAULT_TAG;
     var row = Globals.START_ROW;
     var col = Globals.START_COL;
 
-    var test_values = new Map();
-    var test = function(a, b) {
-      test_values.set(a, b);
+    var test_values = new Array();
+    var test = function(k, v) {
+      test_values.insert(0, {k: k, v:v});
     }
     core.register_consumer(test);
 
@@ -639,11 +639,20 @@ class TestConsumer extends HxrtflibTester {
     editor.set_cursor(row, cursor_col);
     var change_key = "weight";
     var change_value = "bold";
-    core.style_change(change_key, change_value);
-    assertEquals("bold", test_values.get("weight"));
 
-    // check the clear signal got sent
-    assertEquals("reset", test_values.keys().next());
+    // Test it bolds
+    core.style_change(change_key, change_value);
+    assertEquals("reset", test_values.pop().k);
+    var change = test_values.pop();
+    assertEquals(change_key, change.k);
+    assertEquals(change_value, change.v);
+    assertEquals(null, test_values.pop());
+
+    // Test it unbolds
+    core.style_change(change_key, change_value);
+    assertEquals("reset", test_values.pop().k);
+    assertEquals(null, test_values.pop());
+
   }
 
   public function test_mouse_triggers_consumer() {

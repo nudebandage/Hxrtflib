@@ -171,6 +171,7 @@ class Hxrtflib {
   }
 
 
+  // Note, row and col must be of the final position, care of event loop
   public function on_mouse_click(row, col) {
     override_style_reset();
     consumer_run(row, col);
@@ -536,12 +537,15 @@ class Hxrtflib {
   }
 
 
+  // Register a function to recieve notifications
+  // This is used so clients can update UI widgets when styles change
+  // the string "reset" is sent before each change, Toggleable buttons should be set to "off" and non toggelable options left alone
+  // The consumer function must have signature (key, value)
   public function register_consumer(func) {
     consumers.push(func);
   }
 
   public function consumer_run(row, col) {
-    // consumer functions must handle "reset"
     var style_id = _tag_at_index(row, col);
     var style = styles.get(style_id);
     for (func in consumers) {
