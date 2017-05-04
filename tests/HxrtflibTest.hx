@@ -441,7 +441,6 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     var word_length = 3;
 
     editor.set_cell_range(row, col, word_length, "a", tag);
-    editor.set_cell(row, col+word_length+1, " ", tag);
 
     var change_key = "weight";
     var change_value = "bold";
@@ -647,7 +646,6 @@ class TestConsumer extends HxrtflibTester {
     // Insert some chars
     var word_length = 3;
     editor.set_cell_range(row, col, word_length, "a", tag);
-    editor.set_cell(row, col+word_length + 1, " ", tag);
     var cursor_col = col + word_length - 1;
     editor.set_cursor(row, cursor_col);
 
@@ -678,7 +676,6 @@ class TestConsumer extends HxrtflibTester {
     // Insert some chars
     var word_length = 3;
     editor.set_cell_range(row, col, word_length, "a", tag);
-    // editor.set_cell(row, col+word_length + 1, " ", tag);
     var cursor_col = col + word_length;
     editor.set_cursor(row, cursor_col);
 
