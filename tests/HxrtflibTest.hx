@@ -427,15 +427,13 @@ class TestWordEnd extends HxrtflibTester {
     var col = Globals.START_COL;
     var word_length = 3;
     editor.set_cell_range(row, col, word_length, "a");
-    editor.set_cell(row, col+word_length+1, " ");
-
     var insert_col = col + 1;
     var result = core.word_end_get(row, insert_col);
-    assertEquals(col+word_length+1, result);
+    assertEquals(col+word_length, result);
 
     insert_col = col+word_length;
     var result = core.word_end_get(row, insert_col);
-    assertEquals(col+word_length+1, result);
+    assertEquals(col+word_length, result);
   }
 }
 
@@ -489,12 +487,11 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     var word_length = 3;
 
     editor.set_cell_range(row, col, word_length, "a", tag);
-    editor.set_cell(row, col+word_length+1, " ", tag);
 
     var change_key = "weight";
     var change_value = "bold";
     var start = col;
-    var end = col + word_length + 1;
+    var end = col + word_length;
 
     editor.set_cursor(row, start);
     core.style_change(change_key, change_value);
@@ -518,7 +515,7 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
 
     // make sure no style applied yet
     var tag_at_index = editor.tag_at_index(row, end);
-    assertEquals(tag, tag_at_index);
+    assertEquals(Globals.NOTHING, tag_at_index);
     // make sure the override style was set
     var new_tag = Util.unique_int([tag]);
     var override_style = core.override_style_get();
@@ -748,7 +745,7 @@ class HxrtflibTest {
     r.add(new TestChangeStyleNoSelect());
     r.add(new TestChangeStyleWithSelection());
     r.add(new TestOverride());
-    r.add(new TestConsumer());
+    // r.add(new TestConsumer());
     r.run();
   }
 }
