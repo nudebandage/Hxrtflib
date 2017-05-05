@@ -386,20 +386,24 @@ class Hxrtflib {
   }
 
 
+  function get_tag_of_next_char(row, col) : StyleId {
+    var style_id;
+    if (override_style_get() != Globals.NOTHING) {
+      style_id = override_style_get();
+    }
+    else {
+      style_id = _tag_at_T_index(row, col);
+      Assert.assert(style_id != Globals.NOTHING);
+    }
+    return style_id;
+  }
+
   public function style_exists(change_key, change_value, row, col) : StyleExists {
     // Detects weather a change will require a new style to be made
     // FIXME implicitly relies on override_style
 
     // The style we will add or remove our change from
-    var base_style_id;
-    if (override_style_get() != Globals.NOTHING) {
-      base_style_id = override_style_get();
-    }
-    else {
-      base_style_id = _tag_at_T_index(row, col);
-      Assert.assert(base_style_id != Globals.NOTHING);
-    }
-
+    var base_style_id = get_tag_of_next_char(row, col);
     Assert.assert(styles.exists(base_style_id));
     var base_style:Style = styles.get(base_style_id);
     // remove or add the change to the position?
@@ -547,7 +551,11 @@ class Hxrtflib {
   public function consumer_run(row, col) {
     function _apply_screen_updates(event_handler) {
       event_handler("reset", "");
-      var style_id = _tag_at_index(row, col);
+      trace(row, col);
+      var style_id = get_tag_of_next_char(row, col);
+      trace('STYLE_GOTTEN IS');
+      trace(override_style_get());
+      trace(style_id);
       var style = styles.get(style_id);
       for (style_type in style.keys()) {
         var value = style.get(style_type);
