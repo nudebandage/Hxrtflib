@@ -14,6 +14,10 @@
 // but to read the tags or chars you need to use 1.0 to 1.3
 // So we use _index, to refer to the "cursor" and _T_index to automaticlaly handle this conversion for us
 
+// TODO stylid and tag is used ambiguosly..
+// TODO on_char_insert might be simplifiable
+// TODO use interfaces and export the tester
+
 package hxrtflib;
 
 import hxrtflib.Util;
@@ -457,7 +461,6 @@ class Hxrtflib {
   public function style_new(style:Style) : StyleId {
     var style_id = style_id_make();
     _create_style(style_id);
-    // Passing dict to targets doesn't map too cleanly, so...
     for (change_type in style.keys()) {
       var change_value = style.get(change_type);
       _modify_style(style_id, change_type, change_value);
@@ -468,6 +471,7 @@ class Hxrtflib {
 
 
   public function style_id_make() : StyleId {
+    // TODO - O(n^2) ...
     return Util.unique_int([for (x in styles.keys()) x]);
   }
 
@@ -551,11 +555,7 @@ class Hxrtflib {
   public function consumer_run(row, col) {
     function _apply_screen_updates(event_handler) {
       event_handler("reset", "");
-      trace(row, col);
       var style_id = get_tag_of_next_char(row, col);
-      trace('STYLE_GOTTEN IS');
-      trace(override_style_get());
-      trace(style_id);
       var style = styles.get(style_id);
       for (style_type in style.keys()) {
         var value = style.get(style_type);

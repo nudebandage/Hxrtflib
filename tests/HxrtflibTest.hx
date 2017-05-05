@@ -633,9 +633,6 @@ class TestConsumer extends HxrtflibTester {
   function consumer(screen_updates) {
     test_values = new Array();
     function event_handler(k, v) {
-      trace('CALLED');
-      trace(k);
-      trace(v);
       test_values.insert(0, k);
       test_values.insert(0, v);
     }
@@ -688,7 +685,6 @@ class TestConsumer extends HxrtflibTester {
     editor.set_cursor(row, cursor_col);
 
     // Test it bolds
-    trace('START');
     core.style_change(change_key, change_value);
     assertEquals("reset", test_values.pop());
     test_values.pop();
