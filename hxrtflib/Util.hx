@@ -1,7 +1,7 @@
 
 package hxrtflib;
 
-import hxrtflib.Hxrtflib.Style;
+import hxrtflib.Editor.Style;
 
 
 class Util {

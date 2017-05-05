@@ -1,4 +1,5 @@
 import hxrtflib.Hxrtflib;
+import hxrtflib.Editor;
 import hxrtflib.Util;
 
 typedef Cell = {
@@ -10,7 +11,10 @@ typedef Cell = {
 
 // Dummy implementations of text editor
 // A Cell.text value of "" means EOF
-class Editor {
+class TestEditor implements hxrtflib.EditorInterface {
+  public var styles:Map<StyleId, Style> = new Map();
+  public var override_style = Globals.NOTHING;
+
   public var cells : Map<String, Cell> = new Map();
   var max_rows = 10;
   var max_cols = 10;
@@ -18,7 +22,8 @@ class Editor {
 
   public function new() {
   }
-  public dynamic function is_selected(row, col) : Bool {
+
+  public function is_selected(row, col) : Bool {
     var key = index_to_key(row, col);
     if (cells.get(key).selected) {
       return true;
@@ -26,7 +31,7 @@ class Editor {
     return false;
   }
 
-  public dynamic function first_selected_index(row, col) {
+  public function first_selected_index(row, col) {
     // The inital index MUST be selected
     // fails if the first selece is on a new row and the first column..
     var exit = false;
@@ -46,16 +51,16 @@ class Editor {
 
   }
 
-  public dynamic function cell_at_index(row, col) {
+  public function cell_at_index(row, col) {
     var key = index_to_key(row, col);
     return cells.get(key);
   }
 
-  public dynamic function sel_at_index(row, col) : Bool {
+  public function sel_at_index(row, col) : Bool {
     return cell_at_index(row,col).selected;
   }
 
-  public dynamic function char_at_index(row, col) : String {
+  public function char_at_index(row, col) : String {
     var cell = cell_at_index(row, col);
     if (cell.text == "") {
       return Globals.EOF;
@@ -63,39 +68,39 @@ class Editor {
     return cell_at_index(row,col).text;
   }
 
-  public dynamic function tag_at_index(row, col) : Int {
+  public function tag_at_index(row, col) : Int {
     return cell_at_index(row,col).tag;
   }
 
-  public dynamic function tag_add(tag, row, col) : Void {
+  public function tag_add(tag, row, col) : Void {
     var key = index_to_key(row, col);
     var cell = cells.get(key);
     cell.tag = tag;
     cells.set(key, cell);
   }
 
-  public dynamic function last_col(row : Int) {
+  public function last_col(row : Int) {
     return parse_end_col(row);
   }
 
-  public dynamic function ignore_key(event) {
+  public function ignore_key(event) {
     if (event == 'space') {
       return true;
     }
     return false;
   }
 
-  public dynamic function insert_cursor_get() {
+  public function insert_cursor_get() {
     return cursor;
   }
 
-  public dynamic function create_style(style_id) {
+  public function create_style(style_id) {
   }
 
-  public dynamic function modify_style(style_id, key, value) {
+  public function modify_style(style_id, key, value) {
   }
 
-  public dynamic function sel_index_get(row, col) {
+  public function sel_index_get(row, col) {
     // limited to same row;
     var left, right;
     right = col;
@@ -120,12 +125,14 @@ class Editor {
     return {start:start, end:end};
   }
 
-  public dynamic function move_key(event) {
+  public function move_key(event) {
     if (event == 'left') {
       return true;
     }
     return false;
   }
+
+  // -- BELOW IS HELPERS - ABOVE IS INTERFACE IMPLEMTATION
 
 
   public function fill(?char:String="", ?selected:Bool=false, ?tag:Int=-1) {
@@ -186,31 +193,19 @@ class Editor {
 
 
 class HxrtflibTester extends haxe.unit.TestCase {
-  var editor : Editor;
+  var editor : TestEditor;
   var core : Hxrtflib;
 
   override public function setup() {
-    editor = new Editor();
+    editor = new TestEditor();
     editor.fill("");
-    core = new Hxrtflib();
-    core.setup(editor.is_selected,
-               editor.first_selected_index,
-               editor.char_at_index,
-               editor.tag_at_index,
-               editor.tag_add,
-               editor.last_col,
-               editor.ignore_key,
-               editor.insert_cursor_get,
-               editor.create_style,
-               editor.modify_style,
-               editor.sel_index_get,
-               editor.move_key);
+    core = new Hxrtflib(editor);
   }
 }
 
 class TestRandom extends HxrtflibTester {
   public function test_default_tag_is_added_to_map() {
-    assertEquals(core.styles.exists(Globals.DEFAULT_TAG), true);
+    assertEquals(core.ed.styles.exists(Globals.DEFAULT_TAG), true);
   }
 }
 

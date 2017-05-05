@@ -22,159 +22,56 @@
 
 package hxrtflib;
 
+import hxrtflib.Editor;
 import hxrtflib.Util;
 import hxrtflib.Assert;
 
-typedef Row = Int;
-typedef Col = Int;
-
-typedef Pos = {
-  var row:Row;
-  var col:Col;
-}
-
-
-typedef Sel = {
-  var end:Pos;
-  var start:Pos;
-}
-
-
-typedef ChangeKey = String;
-typedef ChangeValue = String;
-typedef StyleId = Int;
-typedef Style = Map<ChangeKey, ChangeValue>;
-typedef Styles = Map<StyleId, Style>;
-typedef Event = String;
-
-
-typedef StyleExists = {
-  var exists:Bool;
-  var style_id:StyleId;
-  var style:Style;
-}
-
-
-class Globals {
-  static public var DEFAULT_TAG : Int = 0;
-  static public var START_ROW : Int = 1;
-  static public var START_COL : Int = 0;
-  static public var NOTHING : Int = -1;
-  static public var EOF = null; // FIXME, Breaks static languages - https://haxe.org/manual/types-nullability.html
-}
-
-interface Editor {
-  var styles : Map<StyleId, Style>;
-  private var override_style = Globals.NOTHING;
-  dynamic private function _is_selected(row:Row, col:Col):Bool;
-  dynamic private function _first_selected_index(row:Row, col:Col):Pos;
-  dynamic private function _char_at_index(row:Row, col:Col):String;
-  dynamic private function __tag_at_index(row:Row, col:Col):StyleId;
-  dynamic private function _tag_add(tag:StyleId, row:Row, col:Col):Void;
-  dynamic private function _last_col(row:Row):Col;
-  dynamic private function _ignore_key(event:Event):Bool;
-  dynamic private function _insert_cursor_get():Pos;
-  dynamic private function _create_style(style_id:StyleId):Void;
-  dynamic private function _modify_style(style_id:StyleId, key:ChangeKey, value:ChangeValue):Void;
-  dynamic private function _sel_index_get(row:Row, col:Col):Sel;
-  dynamic private function _move_key(event:Event):Bool;
-}
-
 @:expose
-class Hxrtflib implements Editor {
-  public var styles : Map<StyleId, Style> = new Map();
-  var override_style = Globals.NOTHING;
+class Hxrtflib {
   static var consumers = new Array();
+  public var ed:EditorInterface;
 
-  public function new() {
+  public function new(editor) {
+    ed = editor;
+    ed.styles = new Map();
     var map = new Style();
-    styles.set(Globals.DEFAULT_TAG, map);
+    ed.styles.set(Globals.DEFAULT_TAG, map);
   }
-
-  public function setup(is_selected,
-                        first_selected_index,
-                        char_at_index,
-                        tag_at_index,
-                        tag_add,
-                        last_col,
-                        ignore_key,
-                        insert_cursor_get,
-                        create_style,
-                        modify_style,
-                        sel_index_get,
-                        move_key) {
-    _is_selected = is_selected;
-    _first_selected_index = first_selected_index;
-    _char_at_index = char_at_index;
-    __tag_at_index = tag_at_index;
-    _tag_add = tag_add;
-    _last_col = last_col;
-    _ignore_key = ignore_key;
-    _insert_cursor_get = insert_cursor_get;
-    _create_style = create_style;
-    _modify_style = modify_style;
-    _sel_index_get = sel_index_get;
-    _move_key = move_key;
-  }
-
-  dynamic function _is_selected(row, col) { return true; }
-  dynamic function _first_selected_index(row, col) : Pos {
-    var pos:Pos = {row:0, col:0};
-    return pos;
-  }
-  dynamic function _char_at_index(row, col) { return ""; }
-  dynamic function __tag_at_index(row, col) { return 0; }
-  dynamic function _tag_add(tag, row, col) { return null; }
-  dynamic function _last_col(row) { return 0; }
-  dynamic function _ignore_key(event) { return false; }
-  dynamic function _insert_cursor_get() : Pos {
-    var pos:Pos = {row:0, col:0};
-    return pos;
-  }
-  dynamic function _create_style(style_id) { return null; }
-  dynamic function _modify_style(style_id, key, value) { return null; }
-  dynamic function _sel_index_get(row, col) {
-    var start:Pos = {row:0, col:0};
-    var end:Pos = {row:0, col:0};
-    var sel:Sel = {start:start, end:end};
-    return sel;
-  }
-  dynamic function _move_key(event) : Bool { return true; }
 
   // if a text editor has 5 chars -> 12345
   // There are 6 possiblle cursor locations
   // The last position has no tag, so we read
   // from the previous one..
-  function _tag_at_index(row, col) {
-    var tag = __tag_at_index(row, col);
+  function tag_at_index(row, col) {
+    var tag = ed.tag_at_index(row, col);
     if (tag == Globals.NOTHING) {
       // TODO read from previous row
       if (col != Globals.START_COL) {
-        tag = __tag_at_index(row, col -1);
+        tag = ed.tag_at_index(row, col -1);
       }
     }
     return tag;
   }
 
-  function _tag_at_T_index(row, col) {
+  function tag_at_T_index(row, col) {
     var tag;
     if (col != Globals.START_COL) {
-      tag = __tag_at_index(row, col-1);
+      tag = ed.tag_at_index(row, col-1);
     }
     else {
-      tag = __tag_at_index(row, col);
+      tag = ed.tag_at_index(row, col);
     }
     return tag;
   }
 
   // Adds a tag on insert, (the libraray must do the insert)
   public function on_char_insert(event, row, col) {
-    if (_move_key(event)) {
+    if (ed.move_key(event)) {
       consumer_run(row, col);
     }
     // event, will be passed to ignored_key, use this
     // to decide if a char needs to be inserted
-    if (_ignore_key(event)) {
+    if (ed.ignore_key(event)) {
       return;
     }
     var override_style = override_style_get();
@@ -186,11 +83,11 @@ class Hxrtflib implements Editor {
     else if (col == Globals.START_COL) {
       insert_when_cursor_at_start(row);
     }
-    else if (_is_selected(row, col)) {
+    else if (ed.is_selected(row, col)) {
       insert_when_selected(row, col);
     }
     else {
-      var tag = _tag_at_T_index(row, col);
+      var tag = tag_at_T_index(row, col);
       // FIXME THIS STATE HSOULD NEVER BE REACHED.. - should be sset in  inset when cursor at start
       if (tag == Globals.NOTHING) {
         insert_when_no_tag(row, col);
@@ -211,8 +108,8 @@ class Hxrtflib implements Editor {
 
   public function insert_when_cursor_at_start(row) {
     var col = Globals.START_COL;
-    var char_at_cur = _char_at_index(row, col);
-    var tag = _tag_at_index(row, col);
+    var char_at_cur = ed.char_at_index(row, col);
+    var tag = ed.tag_at_index(row, col);
 
     if (char_at_cur == "\n"
         || char_at_cur == Globals.EOF) {
@@ -227,7 +124,7 @@ class Hxrtflib implements Editor {
         }
         // Get tag from the previous line
         else {
-          tag = _tag_at_index(row - 1, _last_col(row - 1));
+          tag = ed.tag_at_index(row - 1, ed.last_col(row - 1));
           tag_set(tag, row, Globals.START_COL);
         }
       }
@@ -250,19 +147,20 @@ class Hxrtflib implements Editor {
 
 
   public function insert_when_selected(row:Int, col:Int) {
-    var sel_pos:Pos = _first_selected_index(row, col);
-    var tag = _tag_at_index(sel_pos.row, sel_pos.col);
+    var sel_pos:Pos = ed.first_selected_index(row, col);
+    var tag = ed.tag_at_index(sel_pos.row, sel_pos.col);
     tag_set(tag, sel_pos.row, sel_pos.col);
   }
 
 
+  // set the tag, taking the override into account
   function tag_set_override(tag:Int, row, col) {
     if (override_style_get() == Globals.NOTHING) {
-      _tag_add(tag, row, col);
+      ed.tag_add(tag, row, col);
     }
     // Use the override tag
     else {
-      _tag_add(override_style_get(), row, col);
+      ed.tag_add(override_style_get(), row, col);
       override_style_reset();
     }
   }
@@ -270,30 +168,30 @@ class Hxrtflib implements Editor {
   // set the tag
   function tag_set(tag:Int, row, col) {
     Assert.assert(override_style_get() == Globals.NOTHING);
-    _tag_add(tag, row, col);
+    ed.tag_add(tag, row, col);
   }
 
 
   function override_style_reset() {
-    override_style = Globals.NOTHING;
+    ed.override_style = Globals.NOTHING;
   }
 
 
   function override_style_set(style) {
-    override_style = style;
+    ed.override_style = style;
   }
 
 
   public function override_style_get() {
-    return override_style;
+    return ed.override_style;
   }
 
 
   // Apply a Style change to the current curosor position
   public function style_change(change_key, change_value) {
-    var cursor:Pos = _insert_cursor_get();
+    var cursor:Pos = ed.insert_cursor_get();
     // Style some selection
-    if (_is_selected(cursor.row, cursor.col)) {
+    if (ed.is_selected(cursor.row, cursor.col)) {
       Assert.assert(override_style_get() == Globals.NOTHING);
       style_with_selection(change_key, change_value, cursor);
     }
@@ -339,7 +237,7 @@ class Hxrtflib implements Editor {
 
   // Style a word when it is selected
   function style_with_selection(change_key, change_value, cursor) {
-    var sel = _sel_index_get(cursor.row, cursor.col);
+    var sel = ed.sel_index_get(cursor.row, cursor.col);
     style_word_range_sel(change_key, change_value, sel.start, sel.end);
   }
 
@@ -348,7 +246,7 @@ class Hxrtflib implements Editor {
     // apply style to every char based on the style at cursor
     // + 1 because we have to include the end index
     var style_id;
-    var cursor:Pos = _insert_cursor_get();
+    var cursor:Pos = ed.insert_cursor_get();
     style_id = style_from_change(change_key, change_value,
                                  cursor.row, cursor.col);
 
@@ -366,7 +264,7 @@ class Hxrtflib implements Editor {
         _end_col = end.col;
       }
       else {
-        _end_col = _last_col(r);
+        _end_col = ed.last_col(r);
       }
       for (c in _start_col..._end_col) {
         tag_set(style_id, r,  c);
@@ -394,7 +292,7 @@ class Hxrtflib implements Editor {
         _end_col = end.col;
       }
       else {
-        _end_col = _last_col(r);
+        _end_col = ed.last_col(r);
       }
       for (c in _start_col..._end_col) {
         style_id = style_from_change(change_key, change_value, r, c);
@@ -422,7 +320,7 @@ class Hxrtflib implements Editor {
       style_id = override_style_get();
     }
     else {
-      style_id = _tag_at_T_index(row, col);
+      style_id = tag_at_T_index(row, col);
       // Pressing arrows in an empty widget etc
       if (style_id == Globals.NOTHING) {
         return Globals.DEFAULT_TAG;
@@ -437,8 +335,8 @@ class Hxrtflib implements Editor {
 
     // The style we will add or remove our change from
     var base_style_id = get_tag_of_next_char(row, col);
-    Assert.assert(styles.exists(base_style_id));
-    var base_style:Style = styles.get(base_style_id);
+    Assert.assert(ed.styles.exists(base_style_id));
+    var base_style:Style = ed.styles.get(base_style_id);
     // remove or add the change to the position?
     var remove:Bool;
     // The map is empty
@@ -472,8 +370,8 @@ class Hxrtflib implements Editor {
     // Check if the style already exists
     var se = {exists:false, style_id:Globals.NOTHING, style:new Style()};
     se.exists = false;
-    for (style_id in styles.keys()) {
-      var style = styles.get(style_id);
+    for (style_id in ed.styles.keys()) {
+      var style = ed.styles.get(style_id);
       if (Util.mapSame(required_style, style)) {
         se.exists = true;
         se.style_id = style_id;
@@ -489,19 +387,19 @@ class Hxrtflib implements Editor {
 
   public function style_new(style:Style) : StyleId {
     var style_id = style_id_make();
-    _create_style(style_id);
+    ed.create_style(style_id);
     for (change_type in style.keys()) {
       var change_value = style.get(change_type);
-      _modify_style(style_id, change_type, change_value);
+      ed.modify_style(style_id, change_type, change_value);
     }
-    styles[style_id] = style;
+    ed.styles[style_id] = style;
     return style_id;
   }
 
 
   public function style_id_make() : StyleId {
     // TODO - O(n^2) ...
-    return Util.unique_int([for (x in styles.keys()) x]);
+    return Util.unique_int([for (x in ed.styles.keys()) x]);
   }
 
 
@@ -552,7 +450,7 @@ class Hxrtflib implements Editor {
       return true;
     }
     // TODO indexs must become addable, +1/-1 for row and col
-    var char_prev = _char_at_index(row, col-1);
+    var char_prev = ed.char_at_index(row, col-1);
     if (char_prev == ' ') {
       return true;
     }
@@ -563,9 +461,9 @@ class Hxrtflib implements Editor {
   // Test if the cursor position encompasses a word
   // see module doc for more info
   function is_word_end(row, col) {
-    // Need to specify this behvaior also for _char_at_index
+    // Need to specify this behvaior also for ed.char_at_index
     // TODO indexs must become addable, +1/-1 for row and col
-    var char = _char_at_index(row, col);
+    var char = ed.char_at_index(row, col);
     if (char != ' ' && char != '\n' && char != Globals.EOF) {
       return false;
     }
@@ -586,8 +484,8 @@ class Hxrtflib implements Editor {
     function _apply_screen_updates(event_handler) {
       event_handler("reset", "");
       var style_id = get_tag_of_next_char(row, col);
-      var style = styles.get(style_id);
-      Assert.assert(styles.exists(style_id));
+      var style = ed.styles.get(style_id);
+      Assert.assert(ed.styles.exists(style_id));
       for (style_type in style.keys()) {
         var value = style.get(style_type);
         event_handler(style_type, value);
