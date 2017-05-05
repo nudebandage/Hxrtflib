@@ -120,6 +120,14 @@ class Editor {
     return {start:start, end:end};
   }
 
+  public dynamic function move_key(event) {
+    if (event == 'left') {
+      return true;
+    }
+    return false;
+  }
+
+
   public function fill(?char:String="", ?selected:Bool=false, ?tag:Int=-1) {
     // Fill the text editor with the char
     var cell:Cell;
@@ -195,7 +203,8 @@ class HxrtflibTester extends haxe.unit.TestCase {
                editor.insert_cursor_get,
                editor.create_style,
                editor.modify_style,
-               editor.sel_index_get);
+               editor.sel_index_get,
+               editor.move_key);
   }
 }
 
@@ -712,8 +721,14 @@ class TestConsumer extends HxrtflibTester {
     // check the clear signal got sent
     assertEquals("reset", test_values.pop());
   }
-}
 
+  public function test_arrows_trigger_consumer() {
+    core.register_consumer(consumer);
+    core.on_char_insert('left', Globals.START_ROW, Globals.START_COL);
+    // check the clear signal got sent
+    assertEquals("reset", test_values.pop());
+  }
+}
 
 class TestMapSame extends haxe.unit.TestCase {
   function test_works() {

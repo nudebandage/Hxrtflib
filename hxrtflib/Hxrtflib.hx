@@ -17,6 +17,8 @@
 // TODO stylid and tag is used ambiguosly..
 // TODO on_char_insert might be simplifiable
 // TODO use interfaces and export the tester
+// TODO remove default_tag always being insert
+// TODO what happens on backspace? and del?
 
 package hxrtflib;
 
@@ -80,7 +82,8 @@ class Hxrtflib {
                         insert_cursor_get,
                         create_style,
                         modify_style,
-                        sel_index_get) {
+                        sel_index_get,
+                        move_key) {
     _is_selected = is_selected;
     _first_selected_index = first_selected_index;
     _char_at_index = char_at_index;
@@ -92,6 +95,7 @@ class Hxrtflib {
     _create_style = create_style;
     _modify_style = modify_style;
     _sel_index_get = sel_index_get;
+    _move_key = move_key;
   }
 
   dynamic function _is_selected(row, col) { return true; }
@@ -116,6 +120,7 @@ class Hxrtflib {
     var sel:Sel = {start:start, end:end};
     return sel;
   }
+  dynamic function _move_key(event) : Bool { return true; }
 
   // if a text editor has 5 chars -> 12345
   // There are 6 possiblle cursor locations
@@ -145,12 +150,14 @@ class Hxrtflib {
 
   // Adds a tag on insert, (the libraray must do the insert)
   public function on_char_insert(event, row, col) {
+    if (_move_key(event)) {
+      consumer_run(row, col);
+    }
     // event, will be passed to ignored_key, use this
     // to decide if a char needs to be inserted
     if (_ignore_key(event)) {
       return;
     }
-
     var override_style = override_style_get();
     if (override_style != Globals.NOTHING) {
       tag_set_override(override_style, row, col);
@@ -397,7 +404,10 @@ class Hxrtflib {
     }
     else {
       style_id = _tag_at_T_index(row, col);
-      Assert.assert(style_id != Globals.NOTHING);
+      // Pressing arrows in an empty widget etc
+      if (style_id == Globals.NOTHING) {
+        return Globals.DEFAULT_TAG;
+      }
     }
     return style_id;
   }
@@ -549,6 +559,7 @@ class Hxrtflib {
     consumers.push(func);
   }
 
+  // TODO make this smarter and remove the reset
   // the consumer func will be passed an "apply_screen_update"
   // function, this function takes a param type function called event_handler
   // The event_handler needs to accept key,value pairs and handle resets
@@ -557,6 +568,7 @@ class Hxrtflib {
       event_handler("reset", "");
       var style_id = get_tag_of_next_char(row, col);
       var style = styles.get(style_id);
+      Assert.assert(styles.exists(style_id));
       for (style_type in style.keys()) {
         var value = style.get(style_type);
         event_handler(style_type, value);
