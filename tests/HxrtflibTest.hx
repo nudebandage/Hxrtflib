@@ -165,7 +165,7 @@ class Editor {
   }
 
   public function set_cell_range(row, col, amount, ?char="", ?tag:Int=-1, ?selected:Bool=false) {
-    for (i in col...col+amount+1) {
+    for (i in col...col+amount) {
       set_cell(row, i, char, tag, selected);
     }
   }
@@ -276,15 +276,15 @@ class TestInsertChar extends HxrtflibTester {
   // TODO
   // public function test_ignored_chars() {
   // }
-  // public function test_insert_normal() {
-    // var row = Globals.START_ROW;
-    // var tag = 2;
-    // var insert_col = 2;
-    // editor.set_cell(row, insert_col-1, tag);
-    // core.on_char_insert("a", row, insert_col);
-    // var result = editor.tag_at_index(row, insert_col);
-    // assertEquals(tag, result);
-  // }
+  public function test_insert_normal() {
+    var row = Globals.START_ROW;
+    var tag = 2;
+    var insert_col = 2;
+    editor.set_cell(row, insert_col-1, tag);
+    core.on_char_insert("a", row, insert_col);
+    var result = editor.tag_at_index(row, insert_col);
+    assertEquals(tag, result);
+  }
 
   public function test_override_style_applied() {
     var row = Globals.START_ROW;
@@ -304,7 +304,6 @@ class TestInsertChar extends HxrtflibTester {
     core.style_change(change_key, change_value);
     var override_style = core.override_style_get();
     assertEquals(true, override_style != Globals.NOTHING);
-    assertEquals(true, true);
     core.on_char_insert("b", row, insert_col);
     var result = editor.tag_at_index(row, insert_col);
     assertEquals(override_style, result);
@@ -739,18 +738,14 @@ class HxrtflibTest {
   static function main(){
     var r = new haxe.unit.TestRunner();
     r.add(new TestRandom());
-
     r.add(new TestWhenCursorAtStart());
-
     r.add(new TestInsertWhenSelected());
-    // r.add(new TestInsertChar());
+    r.add(new TestInsertChar());
     r.add(new TestWordExtremity());
     r.add(new TestWordStart());
     r.add(new TestWordEnd());
     r.add(new TestMapSame());
-
     r.add(new TestChangeStyleNoSelect());
-
     r.add(new TestChangeStyleWithSelection());
     r.add(new TestOverride());
     r.add(new TestConsumer());
