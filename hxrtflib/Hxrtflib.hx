@@ -25,10 +25,12 @@ package hxrtflib;
 import hxrtflib.Util;
 import hxrtflib.Assert;
 
+typedef Row = Int;
+typedef Col = Int;
 
 typedef Pos = {
-  var row:Int;
-  var col:Int;
+  var row:Row;
+  var col:Col;
 }
 
 
@@ -43,6 +45,7 @@ typedef ChangeValue = String;
 typedef StyleId = Int;
 typedef Style = Map<ChangeKey, ChangeValue>;
 typedef Styles = Map<StyleId, Style>;
+typedef Event = String;
 
 
 typedef StyleExists = {
@@ -60,9 +63,25 @@ class Globals {
   static public var EOF = null; // FIXME, Breaks static languages - https://haxe.org/manual/types-nullability.html
 }
 
+interface Editor {
+  var styles : Map<StyleId, Style>;
+  private var override_style = Globals.NOTHING;
+  dynamic private function _is_selected(row:Row, col:Col):Bool;
+  dynamic private function _first_selected_index(row:Row, col:Col):Pos;
+  dynamic private function _char_at_index(row:Row, col:Col):String;
+  dynamic private function __tag_at_index(row:Row, col:Col):StyleId;
+  dynamic private function _tag_add(tag:StyleId, row:Row, col:Col):Void;
+  dynamic private function _last_col(row:Row):Col;
+  dynamic private function _ignore_key(event:Event):Bool;
+  dynamic private function _insert_cursor_get():Pos;
+  dynamic private function _create_style(style_id:StyleId):Void;
+  dynamic private function _modify_style(style_id:StyleId, key:ChangeKey, value:ChangeValue):Void;
+  dynamic private function _sel_index_get(row:Row, col:Col):Sel;
+  dynamic private function _move_key(event:Event):Bool;
+}
 
 @:expose
-class Hxrtflib {
+class Hxrtflib implements Editor {
   public var styles : Map<StyleId, Style> = new Map();
   var override_style = Globals.NOTHING;
   static var consumers = new Array();
