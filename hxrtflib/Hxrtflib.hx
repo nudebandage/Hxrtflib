@@ -185,7 +185,7 @@ class Hxrtflib {
     var tag = _tag_at_index(row, col);
 
     if (char_at_cur == "\n"
-        || char_at_cur == "") {
+        || char_at_cur == Globals.EOF) {
         if (row == Globals.START_ROW) {
           // First insert into empty editor
           if (tag == Globals.NOTHING) {
@@ -278,21 +278,25 @@ class Hxrtflib {
   function style_no_selection(change_key, change_value, cursor) {
     var style_id;
     // Style when cursor at extremity
+    trace('IS WORD EXTREMITY');
     if (is_word_extremity(cursor.row, cursor.col)) {
       style_id = style_from_change(change_key, change_value, cursor.row, cursor.col);
 
       // Set The override_style
       if (override_style_get() == Globals.NOTHING) {
+        trace('1. setting os');
         override_style_set(style_id);
       }
       // Reset the override_style
       else {
+        trace('1. resetting os');
         override_style_reset();
       }
 
     }
     // Style when cursor in middle of a word
     else {
+    trace('CUR IN MIDDLE OF WORD');
       // TODO delete this.. Any cursor move should invalidate the override_style - /rename override_style to extrimty_override
       override_style_reset();
 
