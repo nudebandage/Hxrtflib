@@ -13,12 +13,11 @@ __Status = ALPHA i.e api may change/improve__
 ## <a id="introduction"></a>Introduction
 
 Neovim, Tkinter/Gtk text widgets don't support saving and loading of metadata
-related to text editing. While it's easy enough to add some bold and
-make some font changes. Saving this info and loadig this information
-is not include.
+related to text editing. While it's easy enough to get a bit of bold, italic,
+ color action; saving and loading this formatting is not possible :(
 
 Hxrtflib allows arbitrary programming languages and text editors to easily
-gain this capability.
+gain this capability in ~200 LOC.
 
 ### <a id="features"></a>Features
 
@@ -27,10 +26,11 @@ gain this capability.
 * Styling behavior moddeled on libre office
 
 
-### <a id="limitations"></a>Limitations
+### <a id="limitations"></a>Current Limitations
 
 * No right to left language support
-* Customization of Styling behavior
+* Customization of Styling behavior (only behaves like libre open office)
+* Saving and Loading isn't yet implemented
 
 
 ## <a id="installing"></a>Installing
@@ -50,9 +50,13 @@ only be added if/when they are tested (Pull requests anybody ?).
 Here are the steps required.
 
 TODO
+1.
+```clojure
+(if (not (hxrtflib `output/lang`))
+  ((check `python.hxml`)
+   (create `lang.hxml`))
+(haxe `lang.hxml)
+```
 
-1. Check that the hxrtflib library exists for your target langauge
-    1.1 Generating the output Library
-2. Check if the Texteditor has been wrapped in your language
-    2.1 Wrapping the editor
-    2.2 Using the editor
+2. Making the actuall Library in the language is a matter
+of inheriting a base class and implementing a couple of functions. Check the tkpyhxrtflib demo (the functions you need begin with `_hx_`). Everything is still under flux so take it easy aye.

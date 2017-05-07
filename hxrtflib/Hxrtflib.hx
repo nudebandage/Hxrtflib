@@ -42,12 +42,12 @@ class Hxrtflib {
   // There are 6 possiblle cursor locations
   // The last position has no tag, so we read
   // from the previous one..
-  function tag_at_index(row, col) {
-    var tag = ed.tag_at_index(row, col);
+  function _hx_tag_at_index(row, col) {
+    var tag = ed._hx_tag_at_index(row, col);
     if (tag == Globals.NOTHING) {
       // TODO read from previous row
       if (col != Globals.START_COL) {
-        tag = ed.tag_at_index(row, col -1);
+        tag = ed._hx_tag_at_index(row, col -1);
       }
     }
     return tag;
@@ -56,22 +56,22 @@ class Hxrtflib {
   function tag_at_T_index(row, col) {
     var tag;
     if (col != Globals.START_COL) {
-      tag = ed.tag_at_index(row, col-1);
+      tag = ed._hx_tag_at_index(row, col-1);
     }
     else {
-      tag = ed.tag_at_index(row, col);
+      tag = ed._hx_tag_at_index(row, col);
     }
     return tag;
   }
 
   // Adds a tag on insert, (the libraray must do the insert)
   public function on_char_insert(event, row, col) {
-    if (ed.move_key(event)) {
+    if (ed._hx_move_key(event)) {
       consumer_run(row, col);
     }
     // event, will be passed to ignored_key, use this
     // to decide if a char needs to be inserted
-    if (ed.ignore_key(event)) {
+    if (ed._hx_ignore_key(event)) {
       return;
     }
     var override_style = override_style_get();
@@ -83,7 +83,7 @@ class Hxrtflib {
     else if (col == Globals.START_COL) {
       insert_when_cursor_at_start(row);
     }
-    else if (ed.is_selected(row, col)) {
+    else if (ed._hx_is_selected(row, col)) {
       insert_when_selected(row, col);
     }
     else {
@@ -108,8 +108,8 @@ class Hxrtflib {
 
   public function insert_when_cursor_at_start(row) {
     var col = Globals.START_COL;
-    var char_at_cur = ed.char_at_index(row, col);
-    var tag = ed.tag_at_index(row, col);
+    var char_at_cur = ed._hx_char_at_index(row, col);
+    var tag = ed._hx_tag_at_index(row, col);
 
     if (char_at_cur == "\n"
         || char_at_cur == Globals.EOF) {
@@ -124,7 +124,7 @@ class Hxrtflib {
         }
         // Get tag from the previous line
         else {
-          tag = ed.tag_at_index(row - 1, ed.last_col(row - 1));
+          tag = ed._hx_tag_at_index(row - 1, ed._hx_last_col(row - 1));
           tag_set(tag, row, Globals.START_COL);
         }
       }
@@ -147,8 +147,8 @@ class Hxrtflib {
 
 
   public function insert_when_selected(row:Int, col:Int) {
-    var sel_pos:Pos = ed.first_selected_index(row, col);
-    var tag = ed.tag_at_index(sel_pos.row, sel_pos.col);
+    var sel_pos:Pos = ed._hx_first_selected_index(row, col);
+    var tag = ed._hx_tag_at_index(sel_pos.row, sel_pos.col);
     tag_set(tag, sel_pos.row, sel_pos.col);
   }
 
@@ -156,11 +156,11 @@ class Hxrtflib {
   // set the tag, taking the override into account
   function tag_set_override(tag:Int, row, col) {
     if (override_style_get() == Globals.NOTHING) {
-      ed.tag_add(tag, row, col);
+      ed._hx_tag_add(tag, row, col);
     }
     // Use the override tag
     else {
-      ed.tag_add(override_style_get(), row, col);
+      ed._hx_tag_add(override_style_get(), row, col);
       override_style_reset();
     }
   }
@@ -168,7 +168,7 @@ class Hxrtflib {
   // set the tag
   function tag_set(tag:Int, row, col) {
     Assert.assert(override_style_get() == Globals.NOTHING);
-    ed.tag_add(tag, row, col);
+    ed._hx_tag_add(tag, row, col);
   }
 
 
@@ -188,10 +188,10 @@ class Hxrtflib {
 
 
   // Apply a Style change to the current curosor position
-  public function style_change(change_key, change_value) {
-    var cursor:Pos = ed.insert_cursor_get();
+  public dynamic function style_change(change_key, change_value) {
+    var cursor:Pos = ed._hx_insert_cursor_get();
     // Style some selection
-    if (ed.is_selected(cursor.row, cursor.col)) {
+    if (ed._hx_is_selected(cursor.row, cursor.col)) {
       Assert.assert(override_style_get() == Globals.NOTHING);
       style_with_selection(change_key, change_value, cursor);
     }
@@ -237,7 +237,7 @@ class Hxrtflib {
 
   // Style a word when it is selected
   function style_with_selection(change_key, change_value, cursor) {
-    var sel = ed.sel_index_get(cursor.row, cursor.col);
+    var sel = ed._hx_sel_index_get(cursor.row, cursor.col);
     style_word_range_sel(change_key, change_value, sel.start, sel.end);
   }
 
@@ -246,7 +246,7 @@ class Hxrtflib {
     // apply style to every char based on the style at cursor
     // + 1 because we have to include the end index
     var style_id;
-    var cursor:Pos = ed.insert_cursor_get();
+    var cursor:Pos = ed._hx_insert_cursor_get();
     style_id = style_from_change(change_key, change_value,
                                  cursor.row, cursor.col);
 
@@ -264,7 +264,7 @@ class Hxrtflib {
         _end_col = end.col;
       }
       else {
-        _end_col = ed.last_col(r);
+        _end_col = ed._hx_last_col(r);
       }
       for (c in _start_col..._end_col) {
         tag_set(style_id, r,  c);
@@ -292,7 +292,7 @@ class Hxrtflib {
         _end_col = end.col;
       }
       else {
-        _end_col = ed.last_col(r);
+        _end_col = ed._hx_last_col(r);
       }
       for (c in _start_col..._end_col) {
         style_id = style_from_change(change_key, change_value, r, c);
@@ -387,10 +387,10 @@ class Hxrtflib {
 
   public function style_new(style:Style) : StyleId {
     var style_id = style_id_make();
-    ed.create_style(style_id);
+    ed._hx_create_style(style_id);
     for (change_type in style.keys()) {
       var change_value = style.get(change_type);
-      ed.modify_style(style_id, change_type, change_value);
+      ed._hx_modify_style(style_id, change_type, change_value);
     }
     ed.styles[style_id] = style;
     return style_id;
@@ -450,7 +450,7 @@ class Hxrtflib {
       return true;
     }
     // TODO indexs must become addable, +1/-1 for row and col
-    var char_prev = ed.char_at_index(row, col-1);
+    var char_prev = ed._hx_char_at_index(row, col-1);
     if (char_prev == ' ') {
       return true;
     }
@@ -461,9 +461,9 @@ class Hxrtflib {
   // Test if the cursor position encompasses a word
   // see module doc for more info
   function is_word_end(row, col) {
-    // Need to specify this behvaior also for ed.char_at_index
+    // Need to specify this behvaior also for ed._hx_char_at_index
     // TODO indexs must become addable, +1/-1 for row and col
-    var char = ed.char_at_index(row, col);
+    var char = ed._hx_char_at_index(row, col);
     if (char != ' ' && char != '\n' && char != Globals.EOF) {
       return false;
     }

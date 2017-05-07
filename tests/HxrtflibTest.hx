@@ -23,7 +23,7 @@ class TestEditor implements hxrtflib.EditorInterface {
   public function new() {
   }
 
-  public function is_selected(row, col) : Bool {
+  public function _hx_is_selected(row, col) : Bool {
     var key = index_to_key(row, col);
     if (cells.get(key).selected) {
       return true;
@@ -31,13 +31,13 @@ class TestEditor implements hxrtflib.EditorInterface {
     return false;
   }
 
-  public function first_selected_index(row, col) {
+  public function _hx_first_selected_index(row, col) {
     // The inital index MUST be selected
     // fails if the first selece is on a new row and the first column..
     var exit = false;
     while (row >= Globals.START_ROW && !exit) {
       while (col >= Globals.START_COL) {
-        if (!sel_at_index(row, col)) {
+        if (!_hx_sel_at_index(row, col)) {
           col += 1;
           exit = true;
           break;
@@ -56,11 +56,11 @@ class TestEditor implements hxrtflib.EditorInterface {
     return cells.get(key);
   }
 
-  public function sel_at_index(row, col) : Bool {
+  public function _hx_sel_at_index(row, col) : Bool {
     return cell_at_index(row,col).selected;
   }
 
-  public function char_at_index(row, col) : String {
+  public function _hx_char_at_index(row, col) : String {
     var cell = cell_at_index(row, col);
     if (cell.text == "") {
       return Globals.EOF;
@@ -68,44 +68,44 @@ class TestEditor implements hxrtflib.EditorInterface {
     return cell_at_index(row,col).text;
   }
 
-  public function tag_at_index(row, col) : Int {
+  public function _hx_tag_at_index(row, col) : Int {
     return cell_at_index(row,col).tag;
   }
 
-  public function tag_add(tag, row, col) : Void {
+  public function _hx_tag_add(tag, row, col) : Void {
     var key = index_to_key(row, col);
     var cell = cells.get(key);
     cell.tag = tag;
     cells.set(key, cell);
   }
 
-  public function last_col(row : Int) {
+  public function _hx_last_col(row : Int) {
     return parse_end_col(row);
   }
 
-  public function ignore_key(event) {
+  public function _hx_ignore_key(event) {
     if (event == 'space') {
       return true;
     }
     return false;
   }
 
-  public function insert_cursor_get() {
+  public function _hx_insert_cursor_get() {
     return cursor;
   }
 
-  public function create_style(style_id) {
+  public function _hx_create_style(style_id) {
   }
 
-  public function modify_style(style_id, key, value) {
+  public function _hx_modify_style(style_id, key, value) {
   }
 
-  public function sel_index_get(row, col) {
+  public function _hx_sel_index_get(row, col) {
     // limited to same row;
     var left, right;
     right = col;
-    for (c in col...last_col(row)+1) {
-      if (sel_at_index(row, c)) {
+    for (c in col..._hx_last_col(row)+1) {
+      if (_hx_sel_at_index(row, c)) {
         right = c;
       }
       else {
@@ -114,7 +114,7 @@ class TestEditor implements hxrtflib.EditorInterface {
     }
     left = Globals.START_COL;
     for (c in Globals.START_COL...col+1) {
-      if (!sel_at_index(row, c)) {
+      if (!_hx_sel_at_index(row, c)) {
         left = c-1;
         break;
       }
@@ -125,7 +125,7 @@ class TestEditor implements hxrtflib.EditorInterface {
     return {start:start, end:end};
   }
 
-  public function move_key(event) {
+  public function _hx_move_key(event) {
     if (event == 'left') {
       return true;
     }
@@ -216,17 +216,17 @@ class TestWhenCursorAtStart extends HxrtflibTester {
     var col = Globals.START_COL;
     core.insert_when_cursor_at_start(row);
 
-    var result = editor.tag_at_index(row, col);
+    var result = editor._hx_tag_at_index(row, col);
     assertEquals(Globals.DEFAULT_TAG, result);
 
-    var result = editor.tag_at_index(row, col+1);
+    var result = editor._hx_tag_at_index(row, col+1);
     assertEquals(Globals.NOTHING, result);
 
     // test that it only happens if a tag doesn't exist
     var tag = 1;
     editor.set_cell(row, col, "b", tag);
     core.insert_when_cursor_at_start(row);
-    var result = editor.tag_at_index(row, col);
+    var result = editor._hx_tag_at_index(row, col);
     assertEquals(tag, result);
   }
 
@@ -239,7 +239,7 @@ class TestWhenCursorAtStart extends HxrtflibTester {
     editor.set_cell(row - 1, col, "a", tag);
 
     core.insert_when_cursor_at_start(row);
-    var result = editor.tag_at_index(row, Globals.START_COL);
+    var result = editor._hx_tag_at_index(row, Globals.START_COL);
     assertEquals(tag, result);
   }
 
@@ -251,7 +251,7 @@ class TestWhenCursorAtStart extends HxrtflibTester {
 
     editor.set_cell(row, col, "a", tag);
     core.insert_when_cursor_at_start(row);
-    var result = editor.tag_at_index(row, col);
+    var result = editor._hx_tag_at_index(row, col);
     assertEquals(tag, result);
   }
 }
@@ -270,7 +270,7 @@ class TestInsertWhenSelected extends HxrtflibTester {
 
     var insert_col = sel_start_col + 2;
     core.insert_when_selected(row, insert_col);
-    var result = editor.tag_at_index(row, sel_start_col);
+    var result = editor._hx_tag_at_index(row, sel_start_col);
     assertEquals(tag, result);
   }
 }
@@ -286,7 +286,7 @@ class TestInsertChar extends HxrtflibTester {
     var insert_col = 2;
     editor.set_cell(row, insert_col-1, tag);
     core.on_char_insert("a", row, insert_col);
-    var result = editor.tag_at_index(row, insert_col);
+    var result = editor._hx_tag_at_index(row, insert_col);
     assertEquals(tag, result);
   }
 
@@ -309,7 +309,7 @@ class TestInsertChar extends HxrtflibTester {
     var override_style = core.override_style_get();
     assertEquals(true, override_style != Globals.NOTHING);
     core.on_char_insert("b", row, insert_col);
-    var result = editor.tag_at_index(row, insert_col);
+    var result = editor._hx_tag_at_index(row, insert_col);
     assertEquals(override_style, result);
 
     // Override style is removed on second char insert
@@ -320,7 +320,7 @@ class TestInsertChar extends HxrtflibTester {
     var override_style = core.override_style_get();
     assertEquals(Globals.DEFAULT_TAG, override_style);
     core.on_char_insert("c", row, insert_col2);
-    var result = editor.tag_at_index(row, insert_col2);
+    var result = editor._hx_tag_at_index(row, insert_col2);
     assertEquals(tag, result);
   }
 }
@@ -458,7 +458,7 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     editor.set_cursor(row, cursor_col);
 
     for (i in col...col+word_length) {
-      var result = editor.tag_at_index(row, i);
+      var result = editor._hx_tag_at_index(row, i);
       assertEquals(tag, result);
     }
 
@@ -466,19 +466,19 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     var new_tag = Util.unique_int([tag]);
     core.style_change(change_key, change_value);
     for (i in col...col+word_length) {
-      var result = editor.tag_at_index(row, i);
+      var result = editor._hx_tag_at_index(row, i);
       assertEquals(new_tag, result);
     }
     // Unbold the entire word
     core.style_change(change_key, change_value);
      for (i in col...col+word_length) {
-      var result = editor.tag_at_index(row, i);
+      var result = editor._hx_tag_at_index(row, i);
       assertEquals(tag, result);
     }
     // Make sure the tag is reused
     core.style_change(change_key, change_value);
     for (i in col...col+word_length) {
-      var result = editor.tag_at_index(row, i);
+      var result = editor._hx_tag_at_index(row, i);
       assertEquals(new_tag, result);
     }
   }
@@ -501,8 +501,8 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     core.style_change(change_key, change_value);
 
     // make sure no style applied yet
-    var tag_at_index = editor.tag_at_index(row, start);
-    assertEquals(tag, tag_at_index);
+    var _hx_tag_at_index = editor._hx_tag_at_index(row, start);
+    assertEquals(tag, _hx_tag_at_index);
     // make sure the override style was set
     var override_style = core.override_style_get();
     assertEquals(Util.unique_int([tag]), override_style);
@@ -518,8 +518,8 @@ class TestChangeStyleNoSelect extends HxrtflibTester {
     core.style_change(change_key, change_value);
 
     // make sure no style applied yet
-    var tag_at_index = editor.tag_at_index(row, end);
-    assertEquals(Globals.NOTHING, tag_at_index);
+    var _hx_tag_at_index = editor._hx_tag_at_index(row, end);
+    assertEquals(Globals.NOTHING, _hx_tag_at_index);
     // make sure the override style was set
     var new_tag = Util.unique_int([tag]);
     var override_style = core.override_style_get();
@@ -558,17 +558,17 @@ class TestChangeStyleWithSelection extends HxrtflibTester {
     core.style_change(change_key, change_value);
     // make sure style applied to start
     var new_tag = Util.unique_int([tag]);
-    var result = editor.tag_at_index(row, sel_start);
+    var result = editor._hx_tag_at_index(row, sel_start);
     assertEquals(new_tag, result);
 
     // make sure style applied to end
-    var result = editor.tag_at_index(row, sel_end);
+    var result = editor._hx_tag_at_index(row, sel_end);
     assertEquals(new_tag, result);
 
     // make sure end points + 1 not styled
-    // var result = editor.tag_at_index(row, sel_start - 1);
+    // var result = editor._hx_tag_at_index(row, sel_start - 1);
     // assertEquals(tag, result);
-    // var result = editor.tag_at_index(row, sel_end + 1);
+    // var result = editor._hx_tag_at_index(row, sel_end + 1);
     // assertEquals(tag, result);
   }
 }
@@ -591,7 +591,7 @@ class TestOverride extends HxrtflibTester {
     core.on_char_insert('a', row, col+1);
 
     var new_tag = Util.unique_int([tag]);
-    var result = editor.tag_at_index(row, col+1);
+    var result = editor._hx_tag_at_index(row, col+1);
     assertEquals(new_tag, result);
   }
 
@@ -608,7 +608,7 @@ class TestOverride extends HxrtflibTester {
     core.style_change(change_key, change_value);
     core.on_char_insert('space', row, col+1);
 
-    var result = editor.tag_at_index(row, col+1);
+    var result = editor._hx_tag_at_index(row, col+1);
     assertEquals(-1, result);
   }
 
